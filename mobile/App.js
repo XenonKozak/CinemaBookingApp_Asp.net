@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -55,12 +55,20 @@ function AppNavigator() {
   );
 }
 
+const MyTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: theme.colors.bgPrimary,
+  },
+};
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
         <StatusBar style="light" />
-        <NavigationContainer>
+        <NavigationContainer theme={MyTheme}>
           <AppNavigator />
         </NavigationContainer>
       </AuthProvider>

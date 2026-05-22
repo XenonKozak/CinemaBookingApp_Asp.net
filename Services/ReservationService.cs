@@ -44,6 +44,7 @@ namespace CinemaBookingApp2.Services
         {
             var reservations = await _context.Reservations
                 .Include(r => r.Screening)
+                    .ThenInclude(s => s.Movie)
                 .Where(r => r.UserId == userId)
                 .ToListAsync();
             
