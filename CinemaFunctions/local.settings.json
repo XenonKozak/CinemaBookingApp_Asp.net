@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ServiceBusConnection": "TUTAJ_WKLEJ_CONNECTION_STRING_DO_SERVICE_BUS",
+    "SmtpHost": "smtp.gmail.com",
+    "SmtpPort": "587",
+    "SmtpUsername": "TWÓJ_EMAIL@gmail.com",
+    "SmtpPassword": "TWOJE_HASLO_APLIKACJI"
+  }
+}
