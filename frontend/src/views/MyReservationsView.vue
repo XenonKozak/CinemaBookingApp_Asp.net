@@ -31,8 +31,14 @@
               📅 {{ formatDate(res.reservationDate) }}
             </p>
           </div>
-          <div class="res-status">
+          <div class="res-status" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
             <span class="badge badge-success">Potwierdzona</span>
+            <button 
+              class="btn btn-secondary" 
+              style="padding: 4px 12px; font-size: 0.85rem; border-color: rgba(239, 68, 68, 0.4); color: var(--danger);"
+              @click="cancelReservation(res.id)">
+              Anuluj
+            </button>
           </div>
         </div>
       </div>
@@ -66,6 +72,17 @@ async function fetchMyReservations() {
     error.value = 'Nie udało się pobrać Twoich rezerwacji.';
   } finally {
     loading.value = false;
+  }
+}
+
+async function cancelReservation(id) {
+  if (!window.confirm('Czy na pewno chcesz anulować ten bilet? Ta operacja jest nieodwracalna.')) return;
+
+  try {
+    await api.delete(`/Reservation/${id}`);
+    fetchMyReservations();
+  } catch (e) {
+    alert('Nie udało się anulować rezerwacji. Upewnij się, że backend działa i jesteś zalogowany.');
   }
 }
 

@@ -12,6 +12,6 @@ namespace CinemaBookingApp2.Interfaces
         Task<GetReservationDto> GetById(Guid id);
         Task<Guid?> Create(CreateReservationDto dto, Guid userId);
         Task<bool> Update(Guid id, UpdateReservationDto dto);
-        Task<bool> Delete(Guid id);
+        Task<bool> Delete(Guid id, Guid userId, string role);
     }
 }

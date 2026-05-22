@@ -113,10 +113,15 @@ namespace CinemaBookingApp2.Services
             return true;
         }
 
-        public async Task<bool> Delete(Guid id)
+        public async Task<bool> Delete(Guid id, Guid userId, string role)
         {
             var reservation = await _context.Reservations.SingleOrDefaultAsync(r => r.Id == id);
             if (reservation == null)
+            {
+                return false;
+            }
+
+            if (reservation.UserId != userId && role != "Admin")
             {
                 return false;
             }

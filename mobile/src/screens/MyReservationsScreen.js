@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import api from '../api/axios';
 import { theme } from '../theme/theme';
@@ -52,6 +53,26 @@ export default function MyReservationsScreen({ navigation }) {
     }
   };
 
+  const handleCancel = (id) => {
+    Alert.alert(
+      'Anuluj bilet',
+      'Czy na pewno chcesz anulować ten bilet? Ta operacja jest nieodwracalna.',
+      [
+        { text: 'Nie', style: 'cancel' },
+        { text: 'Tak', style: 'destructive', onPress: () => cancelReservation(id) },
+      ]
+    );
+  };
+
+  const cancelReservation = async (id) => {
+    try {
+      await api.delete(`/Reservation/${id}`);
+      setReservations(prev => prev.filter(r => r.id !== id));
+    } catch {
+      Alert.alert('Błąd', 'Nie udało się anulować rezerwacji.');
+    }
+  };
+
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardTop}>
@@ -74,8 +95,15 @@ export default function MyReservationsScreen({ navigation }) {
       </View>
 
       <View style={styles.dateRow}>
-        <Text style={styles.dateLabel}>Data rezerwacji</Text>
-        <Text style={styles.dateValue}>{formatDate(item.reservationDate)}</Text>
+        <View>
+          <Text style={styles.dateLabel}>Data rezerwacji</Text>
+          <Text style={styles.dateValue}>{formatDate(item.reservationDate)}</Text>
+        </View>
+        <TouchableOpacity 
+          style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radius.sm, borderColor: 'rgba(239, 68, 68, 0.4)', borderWidth: 1 }} 
+          onPress={() => handleCancel(item.id)}>
+          <Text style={{ color: theme.colors.danger, fontSize: 13, fontWeight: '600' }}>Anuluj</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -191,6 +219,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
     paddingTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   dateLabel: {
     fontSize: 11,

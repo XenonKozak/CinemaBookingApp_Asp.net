@@ -84,13 +84,15 @@ namespace CinemaBookingApp2.Controllers
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult<Reservation>> DeleteReservation(Guid id)
         {
-            var reservation = await _service.Delete(id);
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var role = User.FindFirstValue(ClaimTypes.Role) ?? "User";
+
+            var reservation = await _service.Delete(id, userId, role);
             if (!reservation)
             {   
                 return NotFound();
             }    
-                return NoContent();
-
+            return NoContent();
         }
     }
 }
