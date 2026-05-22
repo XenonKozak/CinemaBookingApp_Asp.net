@@ -14,5 +14,6 @@ namespace CinemaBookingApp2.DTOs.ReservationDto
         public DateTime ReservationDate { get; set; }
         public Guid ScreeningId { get; set; }
         public string MovieTitle { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
     }
 }

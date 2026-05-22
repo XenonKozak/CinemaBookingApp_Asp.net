@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import api from '../api/axios';
 import { theme } from '../theme/theme';
@@ -77,7 +78,11 @@ export default function MyReservationsScreen({ navigation }) {
     <View style={styles.card}>
       <View style={styles.cardTop}>
         <View style={styles.iconBox}>
-          <Text style={styles.resIcon}>🎬</Text>
+          {item.imageUrl ? (
+            <Image source={{ uri: item.imageUrl }} style={styles.posterImage} resizeMode="cover" />
+          ) : (
+            <Text style={styles.resIcon}>🎬</Text>
+          )}
         </View>
         <View style={styles.titleBlock}>
           <Text style={styles.movieTitle} numberOfLines={2}>
@@ -191,6 +196,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  posterImage: {
+    width: '100%',
+    height: '100%',
   },
   resIcon: {
     fontSize: 26,

@@ -20,7 +20,9 @@
       <!-- Content -->
       <div v-else-if="reservations.length > 0" class="reservations-grid">
         <div v-for="res in reservations" :key="res.id" class="reservation-card glass-card">
-          <div class="res-icon">🎬</div>
+          <div class="res-icon" :style="res.imageUrl ? `background-image: url(${res.imageUrl}); background-size: cover; background-position: center; border: 1px solid var(--border);` : ''">
+            <span v-if="!res.imageUrl">🎬</span>
+          </div>
           <div class="res-details">
             <h3 class="res-movie">{{ res.movieTitle }}</h3>
             <div class="res-meta">

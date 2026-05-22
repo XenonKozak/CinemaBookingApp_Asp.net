@@ -30,7 +30,7 @@ function AppNavigator() {
         contentStyle: {
           backgroundColor: theme.colors.bgPrimary,
         },
-        animation: 'fade_from_bottom',
+        animation: 'slide_from_right',
       }}
     >
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
