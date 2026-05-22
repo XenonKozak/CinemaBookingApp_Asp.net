@@ -1,12 +1,10 @@
 <template>
-  <div class="page fade-in">
+  <div class="page fade-in screening-page">
     <div class="container">
-      <!-- Loading -->
       <div v-if="loading" class="loading-center">
         <div class="spinner"></div>
       </div>
 
-      <!-- Error -->
       <div v-else-if="error" class="empty-state">
         <div class="icon">⚠️</div>
         <p>{{ error }}</p>
@@ -15,40 +13,83 @@
         </router-link>
       </div>
 
-      <!-- Content -->
       <template v-else-if="screening">
-        <div class="screening-header slide-up">
-          <router-link to="/" class="back-link">← Powrót do repertuaru</router-link>
+        <router-link to="/" class="back-link">← Powrót do repertuaru</router-link>
 
-          <div class="screening-info">
-            <div v-if="screening.imageUrl" class="screening-poster-container">
-              <img :src="screening.imageUrl" alt="Plakat" class="screening-poster-large" />
-            </div>
-
-            <div class="screening-meta">
+        <div class="movie-card glass-card">
+          <img
+            v-if="screening.imageUrl"
+            :src="screening.imageUrl"
+            alt="Plakat"
+            class="movie-poster"
+          />
+          <div v-else class="movie-poster-placeholder">🎞️</div>
+          <div class="movie-info">
+            <h1 class="movie-title">{{ screening.movieTitle }}</h1>
+            <div class="movie-meta">
               <span class="badge badge-gold">{{ screening.duration }} min</span>
               <span class="badge badge-purple">
                 {{ screening.reservations?.length || 0 }} rezerwacji
               </span>
             </div>
-
-            <h1>{{ screening.movieTitle }}</h1>
-            <p class="screening-desc">{{ screening.description }}</p>
+            <p v-if="screening.description" class="movie-desc-preview">
+              {{ screening.description }}
+            </p>
           </div>
         </div>
 
-        <div class="screening-content">
-          <h2 style="text-align: center; margin-bottom: 32px;">Wybierz swoje miejsce</h2>
+        <section class="hall-section">
+          <h2 class="section-title">Wybierz swoje miejsce</h2>
+          <p class="section-subtitle">Mapa sali — wybierz jedno lub więcej miejsc</p>
 
           <SeatPicker
-            :takenSeats="screening.reservations || []"
-            :loading="reserving"
-            @confirm="handleReservation"
+            :taken-seats="screening.reservations || []"
+            v-model:selected-seats="selectedSeats"
           />
+        </section>
+
+        <div
+          v-if="selectedSeats.length > 0"
+          class="booking-footer"
+          :class="{ 'booking-footer--open': selectedSeats.length > 0 }"
+        >
+          <div class="footer-inner">
+            <div class="footer-info">
+              <span class="footer-label">Wybrane miejsca ({{ selectedSeats.length }})</span>
+              <span class="footer-seats">{{ seatsLabel }}</span>
+            </div>
+            <button
+              class="btn btn-primary footer-btn"
+              :disabled="reserving"
+              @click="handleReservation"
+            >
+              {{
+                reserving
+                  ? 'Rezerwuję...'
+                  : selectedSeats.length === 1
+                    ? 'Potwierdź rezerwację ✓'
+                    : `Rezerwuj ${selectedSeats.length} miejsca ✓`
+              }}
+            </button>
+            <button
+              type="button"
+              class="footer-clear"
+              :disabled="reserving"
+              @click="selectedSeats = []"
+            >
+              Wyczyść wybór
+            </button>
+          </div>
         </div>
 
-        <!-- Toast -->
-        <div v-if="toast" :class="['toast', toast.type === 'success' ? 'toast-success' : 'toast-error']">
+        <div
+          v-if="toast"
+          :class="[
+            'toast',
+            toast.type === 'success' ? 'toast-success' : 'toast-error',
+            { 'toast--above-footer': selectedSeats.length > 0 },
+          ]"
+        >
           {{ toast.message }}
         </div>
       </template>
@@ -57,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../api/axios.js';
 import SeatPicker from '../components/SeatPicker.vue';
@@ -68,6 +109,11 @@ const loading = ref(true);
 const error = ref('');
 const reserving = ref(false);
 const toast = ref(null);
+const selectedSeats = ref([]);
+
+const seatsLabel = computed(() =>
+  selectedSeats.value.map((s) => `${s.row}${s.seat}`).join(', ')
+);
 
 async function fetchScreening() {
   loading.value = true;
@@ -75,38 +121,62 @@ async function fetchScreening() {
   try {
     const res = await api.get(`/Screening/${route.params.id}/Details`);
     screening.value = res.data;
-  } catch (e) {
+  } catch {
     error.value = 'Nie udało się pobrać danych seansu.';
   } finally {
     loading.value = false;
   }
 }
 
-async function handleReservation(seat) {
+async function handleReservation() {
+  if (selectedSeats.value.length === 0) return;
+
   reserving.value = true;
-  try {
-    await api.post('/Reservation', {
-      seatNumber: seat.seat,
-      row: seat.row,
-      reservationDate: new Date().toISOString(),
-      screeningId: route.params.id,
-    });
+  const reservationDate = new Date().toISOString();
+  const booked = [];
+  let hadError = false;
 
-    showToast('success', `Zarezerwowano miejsce ${seat.row}${seat.seat}! 🎉`);
-
-    // Odśwież dane seansu żeby zaktualizować zajęte miejsca
-    await fetchScreening();
-  } catch (e) {
-    if (e.response?.status === 400) {
-      showToast('error', 'To miejsce jest już zajęte lub dane są nieprawidłowe.');
-    } else if (e.response?.status === 401) {
-      showToast('error', 'Musisz być zalogowany, aby dokonać rezerwacji.');
-    } else {
-      showToast('error', 'Wystąpił błąd podczas rezerwacji.');
+  for (const seat of selectedSeats.value) {
+    try {
+      await api.post('/Reservation', {
+        seatNumber: seat.seat,
+        row: seat.row,
+        reservationDate,
+        screeningId: route.params.id,
+      });
+      booked.push(seat);
+    } catch (e) {
+      hadError = true;
+      if (e.response?.status === 401) {
+        showToast('error', 'Musisz być zalogowany, aby dokonać rezerwacji.');
+        reserving.value = false;
+        return;
+      }
     }
-  } finally {
-    reserving.value = false;
   }
+
+  if (booked.length > 0) {
+    const labels = booked.map((s) => `${s.row}${s.seat}`).join(', ');
+    showToast(
+      'success',
+      booked.length === 1
+        ? `Zarezerwowano miejsce ${labels}! 🎉`
+        : `Zarezerwowano ${booked.length} miejsca: ${labels} 🎉`
+    );
+    selectedSeats.value = [];
+    await fetchScreening();
+  }
+
+  if (hadError) {
+    showToast(
+      'error',
+      booked.length > 0
+        ? 'Część miejsc nie została zarezerwowana (może być już zajęta).'
+        : 'Nie udało się zarezerwować wybranych miejsc.'
+    );
+  }
+
+  reserving.value = false;
 }
 
 function showToast(type, message) {
@@ -120,15 +190,19 @@ onMounted(fetchScreening);
 </script>
 
 <style scoped>
-.screening-header {
-  margin-bottom: 48px;
+.screening-page {
+  padding-bottom: 40px;
+}
+
+.screening-page:has(.booking-footer--open) {
+  padding-bottom: 200px;
 }
 
 .back-link {
   display: inline-block;
   font-size: 0.88rem;
   color: var(--text-secondary);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   transition: color var(--transition-fast);
 }
 
@@ -136,53 +210,154 @@ onMounted(fetchScreening);
   color: var(--accent-gold);
 }
 
-.screening-info {
+.movie-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px;
+  margin-bottom: 24px;
+}
+
+.movie-poster {
+  width: 92px;
+  height: 138px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  background: var(--bg-input);
+}
+
+.movie-poster-placeholder {
+  width: 92px;
+  height: 138px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.movie-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.movie-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 10px;
+  line-height: 1.25;
+}
+
+.movie-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.movie-desc-preview {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hall-section {
+  max-width: 560px;
+  margin: 0 auto;
   text-align: center;
 }
 
-.screening-meta {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.screening-poster-container {
-  max-width: 400px;
-  margin: 0 auto 32px auto;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-}
-
-.screening-poster-large {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-}
-
-.screening-info h1 {
-  font-size: 2.4rem;
+.section-title {
+  font-size: 1.35rem;
   font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.section-subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 20px;
+}
+
+.booking-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.35);
+}
+
+.footer-inner {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 24px 20px;
+}
+
+.footer-info {
   margin-bottom: 12px;
 }
 
-.screening-desc {
-  color: var(--text-secondary);
-  font-size: 1.05rem;
-  max-width: 600px;
-  margin: 0 auto;
+.footer-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
 }
 
-.screening-content {
-  max-width: 700px;
-  margin: 0 auto;
+.footer-seats {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--accent-gold-light);
+  word-break: break-word;
+}
+
+.footer-btn {
+  width: 100%;
+  padding: 14px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.footer-clear {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.footer-clear:hover {
+  color: var(--text-primary);
+}
+
+.toast--above-footer {
+  bottom: 180px;
 }
 
 @media (max-width: 640px) {
-  .screening-info h1 {
-    font-size: 1.6rem;
+  .movie-card {
+    flex-direction: row;
+  }
+
+  .movie-title {
+    font-size: 1.1rem;
   }
 }
 </style>

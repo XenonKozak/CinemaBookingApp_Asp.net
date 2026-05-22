@@ -3,60 +3,28 @@
     <div class="modal">
       <div class="modal-header">
         <h3>{{ isEdit ? 'Edytuj seans' : 'Dodaj nowy seans' }}</h3>
-        <button class="modal-close" @click="$emit('close')">&times;</button>
+        <button type="button" class="modal-close" @click="$emit('close')">&times;</button>
       </div>
 
       <form @submit.prevent="handleSubmit" class="form">
-        <div class="form-group">
-          <label for="movieTitle">Tytuł filmu</label>
-          <input
-            id="movieTitle"
-            v-model="form.movieTitle"
-            class="form-input"
-            type="text"
-            placeholder="np. Incepcja"
-            required
-            minlength="1"
-            maxlength="100"
-          />
+        <div class="form-group" v-if="!isEdit">
+          <label for="movieId">Wybierz film</label>
+          <select id="movieId" v-model="form.movieId" class="form-input" required>
+            <option disabled value="">-- wybierz film --</option>
+            <option v-for="m in movies" :key="m.id" :value="m.id">
+              {{ m.title }}
+            </option>
+          </select>
         </div>
 
         <div class="form-group">
-          <label for="description">Opis</label>
-          <textarea
-            id="description"
-            v-model="form.description"
-            class="form-input"
-            placeholder="Krótki opis filmu (min. 10 znaków)"
-            required
-            minlength="10"
-            maxlength="100"
-            rows="3"
-          ></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="duration">Czas trwania (minuty)</label>
+          <label for="screeningTime">Data i godzina seansu</label>
           <input
-            id="duration"
-            v-model.number="form.duration"
+            id="screeningTime"
+            v-model="form.screeningTime"
             class="form-input"
-            type="number"
-            placeholder="np. 148"
+            type="datetime-local"
             required
-            min="1"
-            max="239"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="poster">Plakat (opcjonalnie)</label>
-          <input
-            id="poster"
-            type="file"
-            accept="image/*"
-            class="form-input"
-            @change="handleFileChange"
           />
         </div>
 
@@ -74,12 +42,16 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, computed, watch } from 'vue';
 
 const props = defineProps({
   screening: {
     type: Object,
     default: null,
+  },
+  movies: {
+    type: Array,
+    default: () => [],
   },
   loading: {
     type: Boolean,
@@ -93,27 +65,34 @@ const props = defineProps({
 
 const emit = defineEmits(['submit', 'close']);
 
-const isEdit = !!props.screening;
+const isEdit = computed(() => !!props.screening);
 
 const form = reactive({
-  movieTitle: props.screening?.movieTitle || '',
-  description: props.screening?.description || '',
-  duration: props.screening?.duration || 0,
+  movieId: '',
+  screeningTime: '',
 });
 
-const selectedFile = ref(null);
-
-function handleFileChange(event) {
-  const file = event.target.files[0];
-  if (file) {
-    selectedFile.value = file;
-  } else {
-    selectedFile.value = null;
-  }
-}
+watch(
+  () => props.screening,
+  (s) => {
+    form.movieId = s?.movieId || '';
+    
+    if (s?.screeningTime) {
+      const d = new Date(s.screeningTime);
+      const tzOffset = d.getTimezoneOffset() * 60000;
+      form.screeningTime = (new Date(d - tzOffset)).toISOString().slice(0, 16);
+    } else {
+      const now = new Date();
+      now.setHours(now.getHours() + 1);
+      const tzOffset = now.getTimezoneOffset() * 60000;
+      form.screeningTime = (new Date(now - tzOffset)).toISOString().slice(0, 16);
+    }
+  },
+  { immediate: true }
+);
 
 function handleSubmit() {
-  emit('submit', { ...form, file: selectedFile.value });
+  emit('submit', { ...form });
 }
 </script>
 
@@ -122,11 +101,6 @@ function handleSubmit() {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
 }
 
 .form-error {

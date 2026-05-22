@@ -1,50 +1,30 @@
-using CinemaBookingApp2.Exceptions.ScreeningExceptions;
 using System.ComponentModel.DataAnnotations;
-using System.Xml.Linq;
 
 namespace CinemaBookingApp2.Models
 {
     public class Screening
     {
         public Guid Id { get; private set; } = Guid.NewGuid();
-        public string MovieTitle { get; private set; } = string.Empty;
-        public string Description { get; private set; } = string.Empty;
-        public int Duration { get; private set; }
-        public string? ImageUrl { get; set; }
+        public Guid MovieId { get; private set; }
+        public Movie Movie { get; set; } = null!;
+        public DateTime ScreeningTime { get; private set; }
         public ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
 
-
-        public Screening(Guid id,string movieTitle, string description, int duration)
+        public Screening(Guid id, Guid movieId, DateTime screeningTime)
         {
             Id = id == Guid.Empty ? Guid.NewGuid() : id;
-            UpdateScreening(movieTitle, description, duration);   
+            MovieId = movieId;
+            ScreeningTime = screeningTime;
         }
 
-        public void UpdateScreening(string movieTitle, string description, int duration)
+        public void UpdateScreening(DateTime screeningTime)
         {
-            if (string.IsNullOrWhiteSpace(movieTitle))
-            {
-                throw new EmptyMovieTitleException();
-            }
-
-            if (string.IsNullOrWhiteSpace(description))
-            {
-                throw new EmptyDescriptionException();
-            }
-            if (duration <= 0 || duration >= 240)
-            {
-                throw new DurationRangeException();
-            }
-
-            MovieTitle = movieTitle;
-            Description = description;
-            Duration = duration;
+            ScreeningTime = screeningTime;
         }
 
-        public static Screening CreateScreening(Guid id, string movieTitle, string description, int duration)
+        public static Screening CreateScreening(Guid id, Guid movieId, DateTime screeningTime)
         {
-            return new Screening(id, movieTitle, description, duration);
+            return new Screening(id, movieId, screeningTime);
         }
-
     }
 }

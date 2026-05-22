@@ -1,5 +1,4 @@
 using CinemaBookingApp2.DTOs.ScreeningDTOs;
-using CinemaBookingApp2.Models;
 
 namespace CinemaBookingApp2.Interfaces
 {
@@ -10,7 +9,6 @@ namespace CinemaBookingApp2.Interfaces
         Task<GetScreeningWithReservDto> GetScreeningByIdWthReserv(Guid id);
         Task<Guid?> CreateScreeningId(CreateScreeningDto dto);
         Task<bool> UpdateScreeningById(Guid id, UpdateScreeningDto dto);
-        Task<bool> UpdatePosterUrl(Guid id, string imageUrl);
         Task<bool> DeleteScreeningById(Guid id);
     }
 }

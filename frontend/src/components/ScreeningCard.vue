@@ -1,115 +1,188 @@
 <template>
-  <div class="screening-card glass-card" @click="$emit('select', screening.id)">
-    <div v-if="screening.imageUrl" class="card-image-wrapper">
-      <img :src="screening.imageUrl" alt="Poster" class="card-image" />
+  <article class="movie-card glass-card">
+    <div class="card-thumb-wrapper">
+      <img
+        v-if="movie.imageUrl"
+        :src="movie.imageUrl"
+        alt="Plakat filmu"
+        class="card-thumb"
+      />
+      <div v-else class="card-thumb-placeholder">
+        <span class="icon">🎞️</span>
+      </div>
+      <div class="duration-badge">{{ movie.duration }} min</div>
     </div>
-    <div class="card-header">
-      <div v-if="!screening.imageUrl" class="card-icon">🎞️</div>
-      <span class="badge badge-gold" :class="{ 'absolute-badge': screening.imageUrl }">{{ screening.duration }} min</span>
+
+    <div class="card-content">
+      <h3 class="card-title" :title="movie.title">{{ movie.title }}</h3>
+      <p class="card-desc">{{ movie.description }}</p>
+
+      <div class="screenings-section">
+        <p class="screenings-title">Dostępne godziny:</p>
+        <div class="screenings-list">
+          <button
+            v-for="s in sortedScreenings"
+            :key="s.id"
+            class="screening-chip"
+            @click="$emit('select-screening', s.id)"
+          >
+            {{ formatTime(s.screeningTime) }}
+          </button>
+        </div>
+      </div>
     </div>
-    <h3 class="card-title">{{ screening.movieTitle }}</h3>
-    <p class="card-desc">{{ screening.description }}</p>
-    <div class="card-footer">
-      <button class="btn btn-primary btn-sm" @click.stop="$emit('select', screening.id)">
-        Zarezerwuj miejsce →
-      </button>
-    </div>
-  </div>
+  </article>
 </template>
 
 <script setup>
-defineProps({
-  screening: {
+import { computed } from 'vue';
+
+const props = defineProps({
+  movie: {
     type: Object,
     required: true,
   },
 });
 
-defineEmits(['select']);
+defineEmits(['select-screening']);
+
+const sortedScreenings = computed(() => {
+  if (!props.movie.screenings) return [];
+  return [...props.movie.screenings].sort((a, b) => new Date(a.screeningTime) - new Date(b.screeningTime));
+});
+
+function formatTime(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleString('pl-PL', {
+    day: '2-digit', month: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
 </script>
 
 <style scoped>
-.screening-card {
-  padding: 28px;
-  cursor: pointer;
+.movie-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  position: relative;
-  overflow: hidden;
-}
-
-.screening-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-gold), var(--accent-purple));
-  opacity: 0;
-  transition: opacity var(--transition-base);
-}
-
-.screening-card:hover::before {
-  opacity: 1;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.card-icon {
-  font-size: 2rem;
-}
-
-.card-image-wrapper {
-  width: calc(100% + 56px);
-  margin: -28px -28px 14px -28px;
-  height: 200px;
-  overflow: hidden;
-  position: relative;
-}
-
-.card-image {
-  width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
+  overflow: hidden;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
-.screening-card:hover .card-image {
+.movie-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+}
+
+.card-thumb-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 130%;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.card-thumb {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.movie-card:hover .card-thumb {
   transform: scale(1.05);
 }
 
-.absolute-badge {
+.card-thumb-placeholder {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.duration-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  color: var(--accent-gold);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(226, 172, 85, 0.3);
+}
+
+.card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .card-title {
-  font-size: 1.2rem;
+  margin: 0 0 8px;
+  font-size: 1.25rem;
   font-weight: 700;
+  line-height: 1.3;
   color: var(--text-primary);
-}
-
-.card-desc {
-  color: var(--text-secondary);
-  font-size: 0.88rem;
-  line-height: 1.5;
-  flex-grow: 1;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.card-footer {
-  padding-top: 8px;
+.card-desc {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.screenings-section {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.screenings-title {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.screenings-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.screening-chip {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.screening-chip:hover {
+  background: var(--accent-gold);
+  color: #000;
+  border-color: var(--accent-gold);
+  transform: translateY(-2px);
 }
 </style>

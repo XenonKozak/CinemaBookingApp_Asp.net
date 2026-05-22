@@ -18,9 +18,12 @@
           </router-link>
 
           <div class="nav-user">
-            <span class="nav-user-name">{{ auth.user?.userName }}</span>
-            <span v-if="auth.isAdmin" class="badge badge-gold">Admin</span>
-            <span v-else class="badge badge-purple">User</span>
+            <div class="nav-avatar">{{ userInitials }}</div>
+            <div class="nav-user-info">
+              <span class="nav-user-name">{{ auth.user?.userName }}</span>
+              <span v-if="auth.isAdmin" class="badge badge-gold">Admin</span>
+              <span v-else class="badge badge-purple">User</span>
+            </div>
           </div>
 
           <button @click="handleLogout" class="btn btn-secondary btn-sm">Wyloguj</button>
@@ -44,7 +47,16 @@
       <template v-if="auth.isLoggedIn">
         <router-link v-if="auth.isAdmin" to="/admin" class="nav-link">Panel Admina</router-link>
         <router-link to="/my-reservations" class="nav-link">Moje Rezerwacje</router-link>
-        <button @click="handleLogout" class="btn btn-secondary btn-sm">Wyloguj ({{ auth.user?.userName }})</button>
+        <div class="nav-user-mobile" @click.stop>
+          <div class="nav-avatar">{{ userInitials }}</div>
+          <div class="nav-user-info">
+            <span class="nav-user-label">Zalogowany jako</span>
+            <span class="nav-user-name">{{ auth.user?.userName }}</span>
+            <span v-if="auth.isAdmin" class="badge badge-gold">Admin</span>
+            <span v-else class="badge badge-purple">User</span>
+          </div>
+        </div>
+        <button @click="handleLogout" class="btn btn-secondary btn-sm">Wyloguj</button>
       </template>
       <template v-else>
         <router-link to="/login" class="nav-link">Zaloguj się</router-link>
@@ -55,13 +67,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { authStore } from '../stores/auth.js';
 
 const auth = authStore;
 const router = useRouter();
 const mobileOpen = ref(false);
+
+const userInitials = computed(() => {
+  if (!auth.user?.userName) return '?';
+  const name = auth.user.userName;
+  if (name.includes('@')) {
+    return name.substring(0, 2).toUpperCase();
+  }
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+});
 
 function handleLogout() {
   auth.logout();
@@ -137,8 +162,29 @@ function handleLogout() {
 .nav-user {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 0 8px;
+}
+
+.nav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-gold));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.nav-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .nav-user-name {
@@ -172,6 +218,23 @@ function handleLogout() {
   gap: 8px;
   padding: 16px 24px;
   border-top: 1px solid var(--border);
+}
+
+.nav-user-mobile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  margin: 4px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-user-label {
+  font-size: 0.75rem;
+  color: var(--text-muted, var(--text-secondary));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 @media (max-width: 768px) {

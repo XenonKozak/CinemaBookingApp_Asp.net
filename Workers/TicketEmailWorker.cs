@@ -2,6 +2,7 @@ using Azure.Messaging.ServiceBus;
 using CinemaBookingApp2.DTOs.ServiceBusDTOs;
 using CinemaBookingApp2.Interfaces;
 using CinemaBookingApp2.Db;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,18 +67,18 @@ namespace CinemaBookingApp2.Workers
                     var context = scope.ServiceProvider.GetRequiredService<ReservationContext>();
 
                     var user = await context.Users.FindAsync(ticketMessage.UserId);
-                    var screening = await context.Screenings.FindAsync(ticketMessage.ScreeningId);
+                    var screening = await context.Screenings.Include(s => s.Movie).FirstOrDefaultAsync(s => s.Id == ticketMessage.ScreeningId);
 
-                    if (user != null && screening != null)
+                    if (user != null && screening != null && screening.Movie != null)
                     {
-                        var emailSubject = $"Twój bilet na film: {screening.MovieTitle}!";
+                        var emailSubject = $"Twój bilet na film: {screening.Movie.Title}!";
                         var emailBody = $@"
                             <h3>Witaj {user.UserName}!</h3>
                             <p>Dziękujemy za dokonanie rezerwacji w naszym kinie.</p>
                             <hr>
                             <h4>Szczegóły Twojego biletu:</h4>
                             <ul>
-                                <li><strong>Film:</strong> {screening.MovieTitle}</li>
+                                <li><strong>Film:</strong> {screening.Movie.Title}</li>
                                 <li><strong>Rząd:</strong> {ticketMessage.Row}</li>
                                 <li><strong>Miejsce:</strong> {ticketMessage.SeatNumber}</li>
                                 <li><strong>Data seansu:</strong> {ticketMessage.ReservationDate:dd.MM.yyyy HH:mm}</li>
@@ -88,7 +89,7 @@ namespace CinemaBookingApp2.Workers
                             <p>Zespół Cinema Booking App</p>";
 
                         await _emailSender.SendEmailAsync(user.Email, emailSubject, emailBody);
-                        Console.WriteLine($"[ServiceBus Worker] Wysłano e-mail z biletem do {user.Email} na film {screening.MovieTitle}");
+                        Console.WriteLine($"[ServiceBus Worker] Wysłano e-mail z biletem do {user.Email} na film {screening.Movie.Title}");
                     }
                     else
                     {

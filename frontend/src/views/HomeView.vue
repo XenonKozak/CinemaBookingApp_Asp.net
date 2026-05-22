@@ -1,7 +1,6 @@
 <template>
   <div class="page fade-in">
     <div class="container">
-      <!-- Hero section -->
       <div class="hero">
         <h1 class="hero-title">
           Odkryj najlepsze <span class="text-gradient">seanse filmowe</span>
@@ -11,33 +10,29 @@
         </p>
       </div>
 
-      <!-- Loading -->
       <div v-if="loading" class="loading-center">
         <div class="spinner"></div>
       </div>
 
-      <!-- Error -->
       <div v-else-if="error" class="empty-state">
         <div class="icon">⚠️</div>
         <p>{{ error }}</p>
-        <button class="btn btn-secondary" style="margin-top: 16px" @click="fetchScreenings">
+        <button class="btn btn-secondary" style="margin-top: 16px" @click="fetchMovies">
           Spróbuj ponownie
         </button>
       </div>
 
-      <!-- Empty -->
-      <div v-else-if="screenings.length === 0" class="empty-state">
+      <div v-else-if="movies.length === 0" class="empty-state">
         <div class="icon">🎬</div>
-        <p>Brak dostępnych seansów</p>
+        <p>Brak dostępnych filmów</p>
       </div>
 
-      <!-- Screenings grid -->
       <div v-else class="grid grid-3">
         <ScreeningCard
-          v-for="s in screenings"
-          :key="s.id"
-          :screening="s"
-          @select="goToScreening"
+          v-for="m in movies"
+          :key="m.id"
+          :movie="m"
+          @select-screening="goToScreening"
         />
       </div>
     </div>
@@ -51,16 +46,17 @@ import api from '../api/axios.js';
 import ScreeningCard from '../components/ScreeningCard.vue';
 
 const router = useRouter();
-const screenings = ref([]);
+const movies = ref([]);
 const loading = ref(true);
 const error = ref('');
 
-async function fetchScreenings() {
+async function fetchMovies() {
   loading.value = true;
   error.value = '';
   try {
-    const res = await api.get('/Screening');
-    screenings.value = res.data;
+    const res = await api.get('/Movie/with-screenings');
+    // Filtrujemy tylko filmy, które mają przypisane jakieś seanse
+    movies.value = res.data.filter(m => m.screenings && m.screenings.length > 0);
   } catch (e) {
     error.value = 'Nie udało się pobrać listy seansów. Upewnij się, że backend jest uruchomiony.';
   } finally {
@@ -68,11 +64,11 @@ async function fetchScreenings() {
   }
 }
 
-function goToScreening(id) {
-  router.push(`/screening/${id}`);
+function goToScreening(screeningId) {
+  router.push(`/screening/${screeningId}`);
 }
 
-onMounted(fetchScreenings);
+onMounted(fetchMovies);
 </script>
 
 <style scoped>

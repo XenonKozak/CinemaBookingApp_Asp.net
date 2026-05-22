@@ -3,91 +3,144 @@
     <div class="container">
       <div class="page-header">
         <h1>⚙️ Panel <span class="text-gradient">Administratora</span></h1>
-        <p>Zarządzaj seansami filmowymi</p>
+        <p>Zarządzaj filmami i seansami</p>
       </div>
 
-      <!-- Toolbar -->
-      <div class="admin-toolbar">
-        <span class="admin-count">{{ screenings.length }} seansów</span>
-        <button class="btn btn-primary" @click="openCreate">
-          + Dodaj nowy seans
-        </button>
+      <div class="admin-tabs">
+        <button class="tab-btn" :class="{ active: activeTab === 'movies' }" @click="activeTab = 'movies'">Filmy</button>
+        <button class="tab-btn" :class="{ active: activeTab === 'screenings' }" @click="activeTab = 'screenings'">Seanse</button>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="loading-center">
-        <div class="spinner"></div>
+      <!-- MOVIES TAB -->
+      <div v-if="activeTab === 'movies'" class="tab-content">
+        <div class="admin-toolbar">
+          <span class="admin-count">{{ movies.length }} filmów</span>
+          <button class="btn btn-primary" @click="openMovieCreate">+ Dodaj film</button>
+        </div>
+
+        <div v-if="loading" class="loading-center">
+          <div class="spinner"></div>
+        </div>
+
+        <div v-else-if="movies.length > 0" class="admin-list">
+          <article v-for="m in movies" :key="m.id" class="admin-card glass-card">
+            <div class="admin-card-top">
+              <img v-if="m.imageUrl" :src="m.imageUrl" alt="" class="admin-thumb" />
+              <div v-else class="admin-thumb-placeholder">🎞️</div>
+              <div class="admin-head">
+                <h3 class="admin-title">{{ m.title }}</h3>
+                <span class="badge badge-gold">{{ m.duration }} min</span>
+              </div>
+            </div>
+            <p class="admin-desc">{{ m.description }}</p>
+            <div class="admin-actions">
+              <button class="btn btn-secondary btn-sm" @click="openMovieEdit(m)">✏️ Edytuj</button>
+              <button class="btn btn-danger btn-sm" @click="confirmMovieDelete(m)">🗑️ Usuń</button>
+            </div>
+          </article>
+        </div>
+
+        <div v-else class="empty-state">
+          <div class="icon">🎬</div>
+          <p>Brak filmów. Dodaj pierwszy film!</p>
+          <button class="btn btn-primary" style="margin-top: 16px" @click="openMovieCreate">
+            + Dodaj film
+          </button>
+        </div>
       </div>
 
-      <!-- Table -->
-      <div v-else-if="screenings.length > 0" class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Tytuł</th>
-              <th>Opis</th>
-              <th>Czas (min)</th>
-              <th>Akcje</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in screenings" :key="s.id">
-              <td class="td-title">{{ s.movieTitle }}</td>
-              <td class="td-desc">{{ s.description }}</td>
-              <td>
-                <span class="badge badge-gold">{{ s.duration }} min</span>
-              </td>
-              <td class="td-actions">
-                <button class="btn btn-secondary btn-sm" @click="openEdit(s)">✏️ Edytuj</button>
-                <button class="btn btn-danger btn-sm" @click="confirmDelete(s)">🗑️ Usuń</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- SCREENINGS TAB -->
+      <div v-if="activeTab === 'screenings'" class="tab-content">
+        <div class="admin-toolbar">
+          <span class="admin-count">{{ screenings.length }} seansów</span>
+          <button class="btn btn-primary" @click="openScreeningCreate">+ Dodaj seans</button>
+        </div>
+
+        <div v-if="loading" class="loading-center">
+          <div class="spinner"></div>
+        </div>
+
+        <div v-else-if="screenings.length > 0" class="admin-list">
+          <article v-for="s in screenings" :key="s.id" class="admin-card glass-card">
+            <div class="admin-head">
+              <h3 class="admin-title">{{ getMovieTitle(s.movieId) }}</h3>
+              <span class="badge badge-purple">{{ formatTime(s.screeningTime) }}</span>
+            </div>
+            <div class="admin-actions">
+              <button class="btn btn-secondary btn-sm" @click="openScreeningEdit(s)">✏️ Edytuj</button>
+              <button class="btn btn-danger btn-sm" @click="confirmScreeningDelete(s)">🗑️ Usuń</button>
+            </div>
+          </article>
+        </div>
+
+        <div v-else class="empty-state">
+          <div class="icon">📅</div>
+          <p>Brak seansów. Najpierw dodaj film, a potem zaplanuj seans!</p>
+          <button class="btn btn-primary" style="margin-top: 16px" @click="openScreeningCreate" :disabled="movies.length === 0">
+            + Dodaj seans
+          </button>
+        </div>
       </div>
 
-      <!-- Empty -->
-      <div v-else class="empty-state">
-        <div class="icon">🎬</div>
-        <p>Brak seansów. Dodaj pierwszy seans!</p>
-      </div>
-
-      <!-- Create/Edit Modal -->
-      <AdminScreeningForm
-        v-if="showForm"
-        :screening="editingScreening"
+      <!-- MODALS -->
+      <AdminMovieForm
+        v-if="showMovieForm"
+        :movie="editingMovie"
         :loading="formLoading"
         :error="formError"
-        @submit="handleFormSubmit"
-        @close="closeForm"
+        @submit="handleMovieSubmit"
+        @close="closeMovieForm"
       />
 
-      <!-- Delete Confirmation -->
-      <div v-if="deletingScreening" class="modal-overlay" @click.self="deletingScreening = null">
+      <AdminScreeningForm
+        v-if="showScreeningForm"
+        :screening="editingScreening"
+        :movies="movies"
+        :loading="formLoading"
+        :error="formError"
+        @submit="handleScreeningSubmit"
+        @close="closeScreeningForm"
+      />
+
+      <!-- DELETE MOVIE CONFIRM -->
+      <div v-if="deletingMovie" class="modal-overlay" @click.self="deletingMovie = null">
         <div class="modal">
           <div class="modal-header">
             <h3>Potwierdź usunięcie</h3>
-            <button class="modal-close" @click="deletingScreening = null">&times;</button>
+            <button class="modal-close" @click="deletingMovie = null">&times;</button>
           </div>
-          <p style="color: var(--text-secondary); margin-bottom: 8px;">
-            Czy na pewno chcesz usunąć seans:
+          <p class="modal-text">Czy na pewno chcesz usunąć film:</p>
+          <p class="modal-title">„{{ deletingMovie.title }}"?</p>
+          <p class="modal-warning">
+            ⚠️ Wszystkie seanse powiązane z tym filmem zostaną również usunięte!
           </p>
-          <p style="font-weight: 700; font-size: 1.1rem; margin-bottom: 24px;">
-            „{{ deletingScreening.movieTitle }}"?
-          </p>
-          <p style="color: var(--danger); font-size: 0.85rem; margin-bottom: 24px;">
-            ⚠️ Wszystkie rezerwacje powiązane z tym seansem zostaną również usunięte!
-          </p>
-          <div style="display: flex; gap: 12px; justify-content: flex-end;">
-            <button class="btn btn-secondary" @click="deletingScreening = null">Anuluj</button>
-            <button class="btn btn-danger" @click="handleDelete" :disabled="deleteLoading">
+          <div class="modal-actions">
+            <button class="btn btn-secondary" @click="deletingMovie = null">Anuluj</button>
+            <button class="btn btn-danger" @click="handleMovieDelete" :disabled="deleteLoading">
               {{ deleteLoading ? 'Usuwanie...' : 'Usuń' }}
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Toast -->
+      <!-- DELETE SCREENING CONFIRM -->
+      <div v-if="deletingScreening" class="modal-overlay" @click.self="deletingScreening = null">
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Potwierdź usunięcie</h3>
+            <button class="modal-close" @click="deletingScreening = null">&times;</button>
+          </div>
+          <p class="modal-text">Czy na pewno chcesz usunąć seans:</p>
+          <p class="modal-title">„{{ getMovieTitle(deletingScreening.movieId) }}" ({{ formatTime(deletingScreening.screeningTime) }})?</p>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" @click="deletingScreening = null">Anuluj</button>
+            <button class="btn btn-danger" @click="handleScreeningDelete" :disabled="deleteLoading">
+              {{ deleteLoading ? 'Usuwanie...' : 'Usuń' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div v-if="toast" :class="['toast', toast.type === 'success' ? 'toast-success' : 'toast-error']">
         {{ toast.message }}
       </div>
@@ -98,126 +151,161 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../api/axios.js';
+import AdminMovieForm from '../components/AdminMovieForm.vue';
 import AdminScreeningForm from '../components/AdminScreeningForm.vue';
 
+const activeTab = ref('movies');
+
+const movies = ref([]);
 const screenings = ref([]);
 const loading = ref(true);
 
-// Form state
-const showForm = ref(false);
+const showMovieForm = ref(false);
+const editingMovie = ref(null);
+
+const showScreeningForm = ref(false);
 const editingScreening = ref(null);
+
 const formLoading = ref(false);
 const formError = ref('');
 
-// Delete state
+const deletingMovie = ref(null);
 const deletingScreening = ref(null);
 const deleteLoading = ref(false);
-
-// Toast
 const toast = ref(null);
 
-async function fetchScreenings() {
+async function fetchData() {
   loading.value = true;
   try {
-    const res = await api.get('/Screening');
-    screenings.value = res.data;
-  } catch (e) {
-    showToast('error', 'Nie udało się pobrać seansów.');
+    const [moviesRes, screeningsRes] = await Promise.all([
+      api.get('/Movie'),
+      api.get('/Screening')
+    ]);
+    movies.value = moviesRes.data;
+    screenings.value = screeningsRes.data;
+  } catch {
+    showToast('error', 'Nie udało się pobrać danych.');
   } finally {
     loading.value = false;
   }
 }
 
-function openCreate() {
-  editingScreening.value = null;
-  formError.value = '';
-  showForm.value = true;
+function getMovieTitle(id) {
+  const m = movies.value.find(x => x.id === id);
+  return m ? m.title : 'Nieznany film';
 }
 
-function openEdit(screening) {
-  editingScreening.value = { ...screening };
-  formError.value = '';
-  showForm.value = true;
+function formatTime(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function closeForm() {
-  showForm.value = false;
-  editingScreening.value = null;
-}
+// Movies
+function openMovieCreate() { editingMovie.value = null; formError.value = ''; showMovieForm.value = true; }
+function openMovieEdit(movie) { editingMovie.value = { ...movie }; formError.value = ''; showMovieForm.value = true; }
+function closeMovieForm() { showMovieForm.value = false; editingMovie.value = null; }
 
-async function handleFormSubmit(data) {
-  formLoading.value = true;
-  formError.value = '';
+async function handleMovieSubmit(data) {
+  formLoading.value = true; formError.value = '';
   try {
-    const file = data.file;
-    delete data.file;
+    const file = data.file; delete data.file;
+    let movieId = editingMovie.value?.id;
 
-    let screeningId = editingScreening.value?.id;
-
-    if (editingScreening.value) {
-      // Update
-      await api.put(`/Screening/${screeningId}`, data);
-      showToast('success', `Seans „${data.movieTitle}" został zaktualizowany.`);
+    if (editingMovie.value) {
+      await api.put(`/Movie/${movieId}`, data);
+      showToast('success', `Film „${data.title}" zaktualizowany.`);
     } else {
-      // Create
-      const res = await api.post('/Screening', data);
-      screeningId = res.data.id;
-      showToast('success', `Seans „${data.movieTitle}" został dodany.`);
+      const res = await api.post('/Movie', data);
+      movieId = res.data?.id ?? res.data?.Id;
+      showToast('success', `Film „${data.title}" dodany.`);
     }
 
-    if (file && screeningId) {
+    if (file && movieId) {
       const formData = new FormData();
       formData.append('file', file);
-      await api.post(`/Screening/${screeningId}/poster`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      showToast('success', 'Plakat został pomyślnie wgrany.');
+      await api.post(`/Movie/${movieId}/poster`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
     }
-
-    closeForm();
-    await fetchScreenings();
+    closeMovieForm(); await fetchData();
   } catch (e) {
-    if (e.response?.status === 400) {
-      formError.value = 'Seans o tych danych już istnieje lub dane są nieprawidłowe.';
-    } else if (e.response?.status === 403) {
-      formError.value = 'Brak uprawnień. Musisz być administratorem.';
+    const msg = e.response?.data?.title || e.response?.data?.message || e.response?.data;
+    formError.value = typeof msg === 'string' ? msg : 'Wystąpił błąd zapisu filmu (sprawdź połączenie z API).';
+  } finally { formLoading.value = false; }
+}
+
+function confirmMovieDelete(movie) { deletingMovie.value = movie; }
+async function handleMovieDelete() {
+  deleteLoading.value = true;
+  try {
+    await api.delete(`/Movie/${deletingMovie.value.id}`);
+    showToast('success', `Film usunięty.`);
+    deletingMovie.value = null; await fetchData();
+  } catch { showToast('error', 'Nie udało się usunąć filmu.'); }
+  finally { deleteLoading.value = false; }
+}
+
+// Screenings
+function openScreeningCreate() { editingScreening.value = null; formError.value = ''; showScreeningForm.value = true; }
+function openScreeningEdit(screening) { editingScreening.value = { ...screening }; formError.value = ''; showScreeningForm.value = true; }
+function closeScreeningForm() { showScreeningForm.value = false; editingScreening.value = null; }
+
+async function handleScreeningSubmit(data) {
+  formLoading.value = true; formError.value = '';
+  const payload = {
+    movieId: data.movieId,
+    screeningTime: new Date(data.screeningTime).toISOString(),
+  };
+  try {
+    if (editingScreening.value) {
+      await api.put(`/Screening/${editingScreening.value.id}`, payload);
+      showToast('success', `Zaktualizowano seans.`);
     } else {
-      formError.value = 'Wystąpił błąd. Spróbuj ponownie.';
+      await api.post('/Screening', payload);
+      showToast('success', `Dodano nowy seans.`);
     }
-  } finally {
-    formLoading.value = false;
-  }
+    closeScreeningForm(); await fetchData();
+  } catch (e) {
+    formError.value = 'Wystąpił błąd zapisu seansu.';
+  } finally { formLoading.value = false; }
 }
 
-function confirmDelete(screening) {
-  deletingScreening.value = screening;
-}
-
-async function handleDelete() {
+function confirmScreeningDelete(screening) { deletingScreening.value = screening; }
+async function handleScreeningDelete() {
   deleteLoading.value = true;
   try {
     await api.delete(`/Screening/${deletingScreening.value.id}`);
-    showToast('success', `Seans „${deletingScreening.value.movieTitle}" został usunięty.`);
-    deletingScreening.value = null;
-    await fetchScreenings();
-  } catch (e) {
-    showToast('error', 'Nie udało się usunąć seansu.');
-  } finally {
-    deleteLoading.value = false;
-  }
+    showToast('success', `Seans usunięty.`);
+    deletingScreening.value = null; await fetchData();
+  } catch { showToast('error', 'Nie udało się usunąć seansu.'); }
+  finally { deleteLoading.value = false; }
 }
 
 function showToast(type, message) {
   toast.value = { type, message };
-  setTimeout(() => {
-    toast.value = null;
-  }, 3000);
+  setTimeout(() => { toast.value = null; }, 3000);
 }
 
-onMounted(fetchScreenings);
+onMounted(fetchData);
 </script>
 
 <style scoped>
+.admin-tabs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.tab-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.tab-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.tab-btn.active { background: var(--accent-gold); color: #000; border-color: var(--accent-gold); }
+
 .admin-toolbar {
   display: flex;
   align-items: center;
@@ -235,31 +323,97 @@ onMounted(fetchScreenings);
   font-weight: 500;
 }
 
-.td-title {
-  font-weight: 600;
-  color: var(--text-primary);
-  min-width: 150px;
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 640px;
+  margin: 0 auto;
 }
 
-.td-desc {
-  color: var(--text-secondary);
+.admin-card {
+  padding: 14px;
+}
+
+.admin-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-thumb {
+  width: 48px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  background: var(--bg-input);
+}
+
+.admin-thumb-placeholder {
+  width: 48px;
+  height: 68px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.admin-head {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.admin-desc {
+  margin: 0 0 12px;
   font-size: 0.85rem;
-  max-width: 300px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.td-actions {
+.admin-actions {
   display: flex;
   gap: 8px;
-  white-space: nowrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 
-@media (max-width: 768px) {
-  .admin-toolbar {
-    flex-direction: column;
-    gap: 12px;
-  }
+.modal-text {
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.modal-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+
+.modal-warning {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
 }
 </style>

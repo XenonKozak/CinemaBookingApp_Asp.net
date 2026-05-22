@@ -51,11 +51,39 @@ namespace CinemaBookingApp2
             builder.Services.AddScoped<IReservationService, ReservationService>();
             builder.Services.AddScoped<IAuthService,AuthService>();
             builder.Services.AddScoped<IScreeningService,ScreeningService>();
+            builder.Services.AddScoped<IMovieService,MovieService>();
             builder.Services.AddSingleton<IServiceBusService, ServiceBusService>();
             builder.Services.AddSingleton<IEmailSender, SmtpEmailSenderService>();
 
             builder.Services.AddSingleton(x => new BlobServiceClient(builder.Configuration.GetConnectionString("BlobStorage")));
             builder.Services.AddScoped<IBlobService, BlobService>();
+
+            // Rejestracja Cosmos DB
+            var cosmosEndpoint = builder.Configuration["CosmosDb:Endpoint"];
+            var cosmosKey = builder.Configuration["CosmosDb:Key"];
+            var databaseName = builder.Configuration["CosmosDb:DatabaseName"];
+            var containerName = builder.Configuration["CosmosDb:ContainerName"];
+
+            // Tworzymy Singleton instancji CosmosClient zgodnie z najlepszymi praktykami
+            builder.Services.AddSingleton<Microsoft.Azure.Cosmos.CosmosClient>(s => 
+            {
+                if (cosmosEndpoint.Contains("TWOJA-BAZA")) 
+                {
+                    // To tylko ochrona przed wyrzucaniem bledu na starcie, gdy uzytkownik jeszcze nie podal kluczy
+                    return null;
+                }
+                return new Microsoft.Azure.Cosmos.CosmosClient(cosmosEndpoint, cosmosKey);
+            });
+            
+            builder.Services.AddScoped<IReviewService>(s => 
+            {
+                var client = s.GetRequiredService<Microsoft.Azure.Cosmos.CosmosClient>();
+                if(client == null) {
+                    return null; // Zabezpieczenie przed rzucaniem wyjatku gdy brak kluczy
+                }
+                return new ReviewService(client, databaseName, containerName);
+            });
+
 
             builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
             builder.Services.AddHostedService<UserRegistrationEmailWorker>();

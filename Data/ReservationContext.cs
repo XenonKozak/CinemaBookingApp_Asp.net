@@ -1,4 +1,4 @@
-﻿using CinemaBookingApp2.Models;
+using CinemaBookingApp2.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace CinemaBookingApp2.Db
@@ -7,6 +7,7 @@ namespace CinemaBookingApp2.Db
     {
        public DbSet<Reservation> Reservations { get; set; }
        public DbSet<User> Users { get; set; }
+       public DbSet<Movie> Movies { get; set; }
        public DbSet<Screening> Screenings { get; set; }
 
         public ReservationContext(DbContextOptions<ReservationContext> options) : base(options) 
@@ -16,6 +17,12 @@ namespace CinemaBookingApp2.Db
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Movie>()
+                .HasMany(m => m.Screenings)
+                .WithOne(s => s.Movie)
+                .HasForeignKey(s => s.MovieId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<Screening>()
                 .HasMany(s => s.Reservations)
                 .WithOne(r => r.Screening)

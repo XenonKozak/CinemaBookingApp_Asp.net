@@ -1,11 +1,9 @@
 <template>
   <div class="seat-picker">
-    <!-- Ekran kinowy -->
-    <div class="screen-wrapper">
-      <div class="screen">EKRAN</div>
+    <div class="screen-bar">
+      <span class="screen-label">EKRAN</span>
     </div>
 
-    <!-- Mapa miejsc -->
     <div class="seats-grid">
       <div v-for="row in rows" :key="row" class="seat-row">
         <span class="row-label">{{ row }}</span>
@@ -13,6 +11,7 @@
           <button
             v-for="seat in 10"
             :key="`${row}-${seat}`"
+            type="button"
             class="seat"
             :class="{
               'seat-taken': isTaken(row, seat),
@@ -30,7 +29,6 @@
       </div>
     </div>
 
-    <!-- Legenda -->
     <div class="legend">
       <div class="legend-item">
         <span class="legend-dot seat-available"></span>
@@ -46,52 +44,44 @@
       </div>
     </div>
 
-    <!-- Podsumowanie wyboru -->
-    <div v-if="selected" class="selection-summary glass-card">
-      <div class="summary-info">
-        <span class="summary-label">Twój wybór:</span>
-        <span class="summary-seat">Rząd {{ selected.row }}, Miejsce {{ selected.seat }}</span>
-      </div>
-      <button class="btn btn-primary" @click="$emit('confirm', selected)" :disabled="loading">
-        {{ loading ? 'Rezerwuję...' : 'Potwierdź rezerwację ✓' }}
-      </button>
-    </div>
+    <p class="hint">Możesz wybrać kilka miejsc — kliknij ponownie, aby odznaczyć</p>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-
 const props = defineProps({
   takenSeats: {
     type: Array,
     default: () => [],
   },
-  loading: {
-    type: Boolean,
-    default: false,
+  selectedSeats: {
+    type: Array,
+    default: () => [],
   },
 });
 
-defineEmits(['confirm']);
+const emit = defineEmits(['update:selectedSeats']);
 
 const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
-const selected = ref(null);
 
 function isTaken(row, seat) {
   return props.takenSeats.some((s) => s.row === row && s.seatNumber === seat);
 }
 
 function isSelected(row, seat) {
-  return selected.value?.row === row && selected.value?.seat === seat;
+  return props.selectedSeats.some((s) => s.row === row && s.seat === seat);
 }
 
 function toggleSeat(row, seat) {
   if (isTaken(row, seat)) return;
+
   if (isSelected(row, seat)) {
-    selected.value = null;
+    emit(
+      'update:selectedSeats',
+      props.selectedSeats.filter((s) => !(s.row === row && s.seat === seat))
+    );
   } else {
-    selected.value = { row, seat };
+    emit('update:selectedSeats', [...props.selectedSeats, { row, seat }]);
   }
 }
 </script>
@@ -101,77 +91,70 @@ function toggleSeat(row, seat) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28px;
+  gap: 20px;
+  width: 100%;
 }
 
-.screen-wrapper {
+.screen-bar {
   width: 100%;
   max-width: 500px;
-  perspective: 300px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 3px solid var(--accent-gold);
+  background: rgba(212, 168, 67, 0.1);
+  border-radius: 6px;
 }
 
-.screen {
-  width: 100%;
-  padding: 8px;
-  text-align: center;
-  font-size: 0.75rem;
+.screen-label {
+  font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 3px;
   color: var(--text-muted);
-  background: linear-gradient(180deg, rgba(212, 168, 67, 0.2), transparent);
-  border-top: 3px solid var(--accent-gold);
-  border-radius: 4px 4px 50% 50%;
-  transform: rotateX(-15deg);
 }
 
 .seats-grid {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
+  max-width: 500px;
 }
 
 .seat-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
 .row-label {
-  width: 20px;
+  width: 22px;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .seats {
   display: flex;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 5px;
+  justify-content: center;
 }
 
 .seat {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border: none;
-  border-radius: 6px 6px 10px 10px;
+  border-radius: 6px;
   font-family: 'Inter', sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
-  position: relative;
-}
-
-.seat::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 3px;
-  right: 3px;
-  height: 5px;
-  border-radius: 4px 4px 0 0;
-  background: inherit;
-  filter: brightness(0.7);
 }
 
 .seat-available {
@@ -179,16 +162,14 @@ function toggleSeat(row, seat) {
   color: var(--text-secondary);
 }
 
-.seat-available:hover {
+.seat-available:hover:not(:disabled) {
   background: rgba(124, 58, 237, 0.3);
   color: white;
-  transform: scale(1.1);
 }
 
 .seat-selected {
-  background: linear-gradient(135deg, var(--accent-gold), #c4942e);
+  background: var(--accent-gold);
   color: #0a0a1a;
-  transform: scale(1.1);
   box-shadow: 0 0 12px rgba(212, 168, 67, 0.4);
 }
 
@@ -200,7 +181,9 @@ function toggleSeat(row, seat) {
 
 .legend {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
 }
 
 .legend-item {
@@ -218,31 +201,11 @@ function toggleSeat(row, seat) {
   display: inline-block;
 }
 
-.selection-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 20px 28px;
-  width: 100%;
-  max-width: 500px;
-}
-
-.summary-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.summary-label {
-  font-size: 0.8rem;
+.hint {
+  font-size: 0.85rem;
   color: var(--text-muted);
-}
-
-.summary-seat {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--accent-gold-light);
+  text-align: center;
+  margin: 0;
 }
 
 @media (max-width: 500px) {
@@ -254,11 +217,6 @@ function toggleSeat(row, seat) {
 
   .seats {
     gap: 4px;
-  }
-
-  .selection-summary {
-    flex-direction: column;
-    text-align: center;
   }
 }
 </style>

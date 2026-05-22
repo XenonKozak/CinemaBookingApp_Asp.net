@@ -6,7 +6,7 @@ function decodeToken(token) {
     const payload = token.split('.')[1];
     const decoded = JSON.parse(atob(payload));
     return {
-      userName: decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || '',
+      userName: decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || decoded.unique_name || decoded.name || '',
       role: decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'User',
       exp: decoded.exp,
     };
