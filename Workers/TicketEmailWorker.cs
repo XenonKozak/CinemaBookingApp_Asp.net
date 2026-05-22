@@ -75,25 +75,51 @@ namespace CinemaBookingApp2.Workers
 
                     if (user != null && screening != null && screening.Movie != null)
                     {
-                        var emailSubject = $"Twój bilet na film: {screening.Movie.Title}!";
-                        var emailBody = $@"
-                            <h3>Witaj {user.UserName}!</h3>
-                            <p>Dziękujemy za dokonanie rezerwacji w naszym kinie.</p>
-                            <hr>
-                            <h4>Szczegóły Twojego biletu:</h4>
-                            <ul>
-                                <li><strong>Film:</strong> {screening.Movie.Title}</li>
-                                <li><strong>Rząd:</strong> {ticketMessage.Row}</li>
-                                <li><strong>Miejsce:</strong> {ticketMessage.SeatNumber}</li>
-                                <li><strong>Data seansu:</strong> {ticketMessage.ReservationDate:dd.MM.yyyy HH:mm}</li>
-                                <li><strong>Kod rezerwacji:</strong> {ticketMessage.ReservationId}</li>
-                            </ul>
-                            <br>
-                            <p>Życzymy udanego seansu!</p>
-                            <p>Zespół Cinema Booking App</p>";
+                        string emailSubject;
+                        string emailBody;
+
+                        if (ticketMessage.IsCancellation)
+                        {
+                            emailSubject = $"Anulowanie rezerwacji na film: {screening.Movie.Title}";
+                            emailBody = $@"
+                                <h3>Witaj {user.UserName},</h3>
+                                <p>Twoja rezerwacja w naszym kinie została pomyślnie anulowana.</p>
+                                <hr>
+                                <h4>Szczegóły anulowanego biletu:</h4>
+                                <ul>
+                                    <li><strong>Film:</strong> {screening.Movie.Title}</li>
+                                    <li><strong>Rząd:</strong> {ticketMessage.Row}</li>
+                                    <li><strong>Miejsce:</strong> {ticketMessage.SeatNumber}</li>
+                                    <li><strong>Data seansu:</strong> {ticketMessage.ReservationDate:dd.MM.yyyy HH:mm}</li>
+                                    <li><strong>Kod rezerwacji:</strong> {ticketMessage.ReservationId}</li>
+                                </ul>
+                                <br>
+                                <p>Mamy nadzieję, że odwiedzisz nas w innym terminie!</p>
+                                <p>Zespół Cinema Booking App</p>";
+                        }
+                        else
+                        {
+                            emailSubject = $"Twój bilet na film: {screening.Movie.Title}!";
+                            emailBody = $@"
+                                <h3>Witaj {user.UserName}!</h3>
+                                <p>Dziękujemy za dokonanie rezerwacji w naszym kinie.</p>
+                                <hr>
+                                <h4>Szczegóły Twojego biletu:</h4>
+                                <ul>
+                                    <li><strong>Film:</strong> {screening.Movie.Title}</li>
+                                    <li><strong>Rząd:</strong> {ticketMessage.Row}</li>
+                                    <li><strong>Miejsce:</strong> {ticketMessage.SeatNumber}</li>
+                                    <li><strong>Data seansu:</strong> {ticketMessage.ReservationDate:dd.MM.yyyy HH:mm}</li>
+                                    <li><strong>Kod rezerwacji:</strong> {ticketMessage.ReservationId}</li>
+                                </ul>
+                                <br>
+                                <p>Życzymy udanego seansu!</p>
+                                <p>Zespół Cinema Booking App</p>";
+                        }
 
                         await _emailSender.SendEmailAsync(user.Email, emailSubject, emailBody);
-                        Console.WriteLine($"[ServiceBus Worker] Wysłano e-mail z biletem do {user.Email} na film {screening.Movie.Title}");
+                        string logAction = ticketMessage.IsCancellation ? "anulowaniem biletu" : "biletem";
+                        Console.WriteLine($"[ServiceBus Worker] Wysłano e-mail z {logAction} do {user.Email} na film {screening.Movie.Title}");
                     }
                     else
                     {

@@ -128,6 +128,19 @@ namespace CinemaBookingApp2.Services
 
             _context.Reservations.Remove(reservation);
             await _context.SaveChangesAsync();
+
+            var message = new CinemaBookingApp2.DTOs.ServiceBusDTOs.TicketMessageDto
+            {
+                ReservationId = reservation.Id,
+                SeatNumber = reservation.SeatNumber,
+                Row = reservation.Row,
+                ScreeningId = reservation.ScreeningId,
+                UserId = reservation.UserId,
+                ReservationDate = reservation.ReservationDate,
+                IsCancellation = true
+            };
+            await _serviceBusService.SendMessageAsync(message, "ticket-queue");
+
             return true;
         }
     }
