@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5091/api',
+  baseURL: 'https://cinema-api-gdansk-2026-ctd6fxgvgvdjhpbd.polandcentral-01.azurewebsites.net/api',
   headers: {
     'Content-Type': 'application/json',
   },
