@@ -250,6 +250,16 @@ h4 { font-size: 1rem; }
   color: var(--text-muted);
 }
 
+select.form-input {
+  cursor: pointer;
+  color-scheme: dark;
+}
+
+select.form-input option {
+  background: #141428;
+  color: #f0f0f8;
+}
+
 /* ═══ BADGE ═══ */
 .badge {
   display: inline-flex;

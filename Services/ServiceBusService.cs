@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using CinemaBookingApp2.Configurations;
 using CinemaBookingApp2.Interfaces;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
@@ -8,16 +9,20 @@ namespace CinemaBookingApp2.Services
 {
     public class ServiceBusService : IServiceBusService
     {
-        private readonly ServiceBusClient _client;
+        private readonly ServiceBusClient? _client;
 
         public ServiceBusService(IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("ServiceBus");
-            _client = new ServiceBusClient(connectionString);
+            if (ServiceBusConfig.IsEnabled(configuration))
+            {
+                _client = new ServiceBusClient(configuration.GetConnectionString("ServiceBus"));
+            }
         }
 
         public async Task SendMessageAsync<T>(T serviceBusMessage, string queueName)
         {
+            if (_client == null) return;
+
             try
             {
                 var sender = _client.CreateSender(queueName);

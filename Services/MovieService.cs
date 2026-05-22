@@ -5,8 +5,6 @@ using CinemaBookingApp2.Interfaces;
 using CinemaBookingApp2.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
-using System.Text.Json;
-
 namespace CinemaBookingApp2.Services
 {
     public class MovieService : IMovieService
@@ -31,33 +29,12 @@ namespace CinemaBookingApp2.Services
 
         public async Task<IEnumerable<GetMovieWithScreeningsDto>> GetMoviesWithScreenings()
         {
-            try
-            {
-                var cachedData = await _cache.GetStringAsync(CacheKey);
-                if (!string.IsNullOrEmpty(cachedData))
-                {
-                    return JsonSerializer.Deserialize<IEnumerable<GetMovieWithScreeningsDto>>(cachedData) ?? new List<GetMovieWithScreeningsDto>();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Redis Error] Błąd pobierania z cache: {ex.Message}");
-            }
-
-            var movies = await _context.Movies.Include(m => m.Screenings).ToListAsync();
-            var dtos = _mapper.Map<IEnumerable<GetMovieWithScreeningsDto>>(movies);
-
-            try
-            {
-                var cacheOptions = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) };
-                await _cache.SetStringAsync(CacheKey, JsonSerializer.Serialize(dtos), cacheOptions);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Redis Error] Błąd zapisu do cache: {ex.Message}");
-            }
-
-            return dtos;
+            // Zawsze świeże dane z bazy — cache powodował brakujące seanse po dodaniu nowej godziny.
+            var movies = await _context.Movies
+                .Include(m => m.Screenings)
+                .AsNoTracking()
+                .ToListAsync();
+            return _mapper.Map<IEnumerable<GetMovieWithScreeningsDto>>(movies);
         }
 
         public async Task<GetMovieDto?> GetMovieById(Guid id)
@@ -119,9 +96,13 @@ namespace CinemaBookingApp2.Services
             return true;
         }
 
-        private async Task ClearCacheAsync()
+        public async Task InvalidateRepertoireCacheAsync()
         {
-            try { await _cache.RemoveAsync(CacheKey); } catch {}
+            try { await _cache.RemoveAsync(CacheKey); } catch { }
+            // Wyczyść też ewentualny stary wpis z poprzedniej wersji API.
+            try { await _cache.RemoveAsync("all_movies"); } catch { }
         }
+
+        private Task ClearCacheAsync() => InvalidateRepertoireCacheAsync();
     }
 }

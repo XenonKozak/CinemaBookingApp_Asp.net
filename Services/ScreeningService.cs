@@ -13,12 +13,18 @@ namespace CinemaBookingApp2.Services
         private readonly ReservationContext _context;
         private readonly IMapper _mapper;
         private readonly IServiceBusService _serviceBusService;
+        private readonly IMovieService _movieService;
 
-        public ScreeningService(ReservationContext context, IMapper mapper, IServiceBusService serviceBusService)
+        public ScreeningService(
+            ReservationContext context,
+            IMapper mapper,
+            IServiceBusService serviceBusService,
+            IMovieService movieService)
         {
             _context = context;
             _mapper = mapper;
             _serviceBusService = serviceBusService;
+            _movieService = movieService;
         }
 
         public async Task<IEnumerable<GetScreeningDto>> GetScreenings()
@@ -60,6 +66,7 @@ namespace CinemaBookingApp2.Services
                 Duration = movie.Duration
             };
             await _serviceBusService.SendMessageAsync(message, "screening-events");
+            await _movieService.InvalidateRepertoireCacheAsync();
 
             return screening.Id;
         }
@@ -71,6 +78,7 @@ namespace CinemaBookingApp2.Services
 
             screening.UpdateScreening(dto.ScreeningTime);
             await _context.SaveChangesAsync();
+            await _movieService.InvalidateRepertoireCacheAsync();
 
             return true;
         }
@@ -82,6 +90,7 @@ namespace CinemaBookingApp2.Services
 
             _context.Screenings.Remove(screening);
             await _context.SaveChangesAsync();
+            await _movieService.InvalidateRepertoireCacheAsync();
             return true;
         }
     }

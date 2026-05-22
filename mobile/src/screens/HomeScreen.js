@@ -14,6 +14,13 @@ import api from '../api/axios';
 import { theme } from '../theme/theme';
 import NavBar from '../components/NavBar';
 import { useAuth } from '../context/AuthContext';
+import {
+  parseScreeningTime,
+  formatScreeningClock,
+  formatScreeningDayShort,
+  getMovieScreenings,
+  buildRepertoire,
+} from '../utils/screeningTime';
 
 export default function HomeScreen({ navigation }) {
   const auth = useAuth();
@@ -25,9 +32,12 @@ export default function HomeScreen({ navigation }) {
   const fetchMovies = async () => {
     setError('');
     try {
-      const response = await api.get('/Movie/with-screenings');
-      // Tylko filmy, które mają zaplanowane seanse
-      setMovies(response.data.filter(m => m.screenings && m.screenings.length > 0));
+      const bust = Date.now();
+      const [moviesRes, screeningsRes] = await Promise.all([
+        api.get('/Movie', { params: { _: bust } }),
+        api.get('/Screening', { params: { _: bust } }),
+      ]);
+      setMovies(buildRepertoire(moviesRes.data, screeningsRes.data));
     } catch {
       setError('Nie udało się pobrać listy seansów. Upewnij się, że backend jest uruchomiony.');
     } finally {
@@ -72,7 +82,9 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderMovie = ({ item }) => {
-    const sortedScreenings = [...item.screenings].sort((a, b) => new Date(a.screeningTime) - new Date(b.screeningTime));
+    const sortedScreenings = [...getMovieScreenings(item)].sort(
+      (a, b) => parseScreeningTime(a.screeningTime) - parseScreeningTime(b.screeningTime)
+    );
 
     return (
       <View style={styles.card}>
@@ -85,7 +97,7 @@ export default function HomeScreen({ navigation }) {
             </View>
           )}
           <View style={styles.cardInfo}>
-            <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+            <Text style={styles.title}>{item.title}</Text>
             <View style={styles.durationBadge}>
               <Text style={styles.durationText}>{item.duration} min</Text>
             </View>
@@ -94,24 +106,19 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.desc} numberOfLines={3}>{item.description}</Text>
         
         <View style={styles.screeningsSection}>
-          <Text style={styles.screeningsTitle}>Dostępne godziny:</Text>
-          <View style={styles.chipsContainer}>
-            {sortedScreenings.map((s) => {
-              const d = new Date(s.screeningTime);
-              const timeStr = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-              const dateStr = d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
-              return (
-                <TouchableOpacity
-                  key={s.id}
-                  style={styles.chip}
-                  onPress={() => goToScreening(s.id)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.chipDate}>{dateStr}</Text>
-                  <Text style={styles.chipTime}>{timeStr}</Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={styles.timesRow}>
+            {sortedScreenings.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                style={styles.timePill}
+                onPress={() => goToScreening(s.id)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.timePillClock}>{formatScreeningClock(s.screeningTime)}</Text>
+                <Text style={styles.timePillDot}> · </Text>
+                <Text style={styles.timePillDay}>{formatScreeningDayShort(s.screeningTime)}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </View>
@@ -267,8 +274,10 @@ const styles = StyleSheet.create({
   title: {
     color: theme.colors.textPrimary,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 8,
+    lineHeight: 24,
+    flexShrink: 1,
   },
   durationBadge: {
     alignSelf: 'flex-start',
@@ -295,34 +304,34 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.border,
     paddingTop: 12,
   },
-  screeningsTitle: {
-    color: theme.colors.textMuted,
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  chipsContainer: {
+  timesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  chip: {
-    backgroundColor: theme.colors.bgInput,
+  timePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
     borderColor: theme.colors.border,
-    borderRadius: theme.radius.sm,
-    paddingHorizontal: 12,
+    borderRadius: 999,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    alignItems: 'center',
   },
-  chipDate: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    marginBottom: 2,
-  },
-  chipTime: {
+  timePillClock: {
     color: theme.colors.textPrimary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  timePillDot: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+  },
+  timePillDay: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
   },
   emptyBox: {
     alignItems: 'center',

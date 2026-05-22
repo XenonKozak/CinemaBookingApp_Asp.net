@@ -15,6 +15,7 @@ import { theme } from '../theme/theme';
 import NavBar from '../components/NavBar';
 import AdminMovieForm from '../components/AdminMovieForm';
 import AdminScreeningForm from '../components/AdminScreeningForm';
+import { formatScreeningDateTime, toApiScreeningTime } from '../utils/screeningTime';
 
 export default function AdminScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('movies');
@@ -59,10 +60,7 @@ export default function AdminScreen({ navigation }) {
     return m ? m.title : 'Nieznany film';
   };
 
-  const formatTime = (dateStr) => {
-    const d = new Date(dateStr);
-    return d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (dateStr) => formatScreeningDateTime(dateStr);
 
   // Movies
   const handleMovieSubmit = async (data) => {
@@ -124,7 +122,7 @@ export default function AdminScreen({ navigation }) {
     setFormError('');
     const payload = {
       movieId: data.movieId,
-      screeningTime: new Date(data.screeningTime).toISOString(),
+      screeningTime: toApiScreeningTime(data.screeningTime),
     };
     try {
       if (editingScreening) {

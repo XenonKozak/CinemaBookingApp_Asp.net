@@ -26,6 +26,7 @@ namespace CinemaBookingApp2.Controllers
         }
 
         [HttpGet("with-screenings")]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<ActionResult<IEnumerable<GetMovieWithScreeningsDto>>> GetAllWithScreenings()
         {
             var movies = await _movieService.GetMoviesWithScreenings();

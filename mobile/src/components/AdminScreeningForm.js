@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { theme } from '../theme/theme';
+import { toApiScreeningTime, toDatetimeLocalValue } from '../utils/screeningTime';
 import { Picker } from '@react-native-picker/picker'; // you may need to install @react-native-picker/picker if not already, wait, I will use standard RN or simple list if Picker is not there. Wait, I will use a simple list of buttons if Picker is absent to be safe.
 
 const emptyForm = {
@@ -37,7 +38,7 @@ export default function AdminScreeningForm({
         screening
           ? {
               movieId: screening.movieId || '',
-              screeningTime: screening.screeningTime ? new Date(screening.screeningTime).toISOString().slice(0, 16).replace('T', ' ') : '',
+              screeningTime: screening.screeningTime ? toDatetimeLocalValue(screening.screeningTime) : '',
             }
           : emptyForm
       );
@@ -50,14 +51,9 @@ export default function AdminScreeningForm({
     if (!form.screeningTime.trim() || (!isEdit && !form.movieId)) {
       return;
     }
-    let finalTime = form.screeningTime;
-    if (finalTime.includes(' ')) {
-      finalTime = finalTime.replace(' ', 'T') + ':00Z';
-    }
-
     onSubmit({
       movieId: form.movieId,
-      screeningTime: finalTime,
+      screeningTime: toApiScreeningTime(form.screeningTime),
     });
   };
 

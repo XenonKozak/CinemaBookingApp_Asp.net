@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using CinemaBookingApp2.Configurations;
 using CinemaBookingApp2.DTOs.ServiceBusDTOs;
 using CinemaBookingApp2.Interfaces;
 using CinemaBookingApp2.Db;
@@ -30,10 +31,13 @@ namespace CinemaBookingApp2.Workers
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var connectionString = _configuration.GetConnectionString("ServiceBus");
-            
-            if (string.IsNullOrEmpty(connectionString)) return;
+            if (!ServiceBusConfig.IsEnabled(_configuration))
+            {
+                Console.WriteLine("[ServiceBus Worker] Kolejka 'ticket-queue' wyłączona (brak poprawnego Service Bus w konfiguracji).");
+                return;
+            }
 
+            var connectionString = _configuration.GetConnectionString("ServiceBus")!;
             _client = new ServiceBusClient(connectionString);
             _processor = _client.CreateProcessor("ticket-queue", new ServiceBusProcessorOptions());
 

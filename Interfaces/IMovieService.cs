@@ -12,5 +12,6 @@ namespace CinemaBookingApp2.Interfaces
         Task<bool> UpdateMovie(Guid id, UpdateMovieDto dto);
         Task<bool> UpdatePosterUrl(Guid id, string imageUrl);
         Task<bool> DeleteMovie(Guid id);
+        Task InvalidateRepertoireCacheAsync();
     }
 }

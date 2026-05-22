@@ -24,10 +24,13 @@
 
       <div v-else-if="movies.length === 0" class="empty-state">
         <div class="icon">🎬</div>
-        <p>Brak dostępnych filmów</p>
+        <p>Brak dostępnych filmów z seansami</p>
+        <button class="btn btn-secondary" style="margin-top: 16px" @click="fetchMovies">
+          Odśwież listę
+        </button>
       </div>
 
-      <div v-else class="grid grid-3">
+      <div v-else class="grid grid-repertoire">
         <ScreeningCard
           v-for="m in movies"
           :key="m.id"
@@ -40,12 +43,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import api from '../api/axios.js';
 import ScreeningCard from '../components/ScreeningCard.vue';
+import { buildRepertoire, REPERTOIRE_REFRESH_EVENT } from '../utils/screeningTime.js';
 
 const router = useRouter();
+const route = useRoute();
 const movies = ref([]);
 const loading = ref(true);
 const error = ref('');
@@ -53,11 +58,14 @@ const error = ref('');
 async function fetchMovies() {
   loading.value = true;
   error.value = '';
+  const bust = Date.now();
   try {
-    const res = await api.get('/Movie/with-screenings');
-    // Filtrujemy tylko filmy, które mają przypisane jakieś seanse
-    movies.value = res.data.filter(m => m.screenings && m.screenings.length > 0);
-  } catch (e) {
+    const [moviesRes, screeningsRes] = await Promise.all([
+      api.get('/Movie', { params: { _: bust }, headers: { 'Cache-Control': 'no-cache' } }),
+      api.get('/Screening', { params: { _: bust }, headers: { 'Cache-Control': 'no-cache' } }),
+    ]);
+    movies.value = buildRepertoire(moviesRes.data, screeningsRes.data);
+  } catch {
     error.value = 'Nie udało się pobrać listy seansów. Upewnij się, że backend jest uruchomiony.';
   } finally {
     loading.value = false;
@@ -68,7 +76,29 @@ function goToScreening(screeningId) {
   router.push(`/screening/${screeningId}`);
 }
 
-onMounted(fetchMovies);
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible' && route.name === 'Home') {
+    fetchMovies();
+  }
+}
+
+onMounted(() => {
+  fetchMovies();
+  window.addEventListener(REPERTOIRE_REFRESH_EVENT, fetchMovies);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+});
+
+onUnmounted(() => {
+  window.removeEventListener(REPERTOIRE_REFRESH_EVENT, fetchMovies);
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+});
+
+watch(
+  () => route.name,
+  (name) => {
+    if (name === 'Home') fetchMovies();
+  }
+);
 </script>
 
 <style scoped>
@@ -89,6 +119,12 @@ onMounted(fetchMovies);
   font-size: 1.15rem;
   max-width: 500px;
   margin: 0 auto;
+}
+
+:global(.grid-repertoire) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
 }
 
 @media (max-width: 640px) {

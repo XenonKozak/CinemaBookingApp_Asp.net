@@ -1,7 +1,8 @@
 import axios from 'axios';
 
+// Lokalny backend: utwórz frontend/.env.local z VITE_API_URL=http://localhost:5091/api
 const api = axios.create({
-  baseURL: 'https://cinema-api-gdansk-2026-ctd6fxgvgvdjhpbd.polandcentral-01.azurewebsites.net/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://cinema-api-gdansk-2026-ctd6fxgvgvdjhpbd.polandcentral-01.azurewebsites.net/api',
   headers: {
     'Content-Type': 'application/json',
   },

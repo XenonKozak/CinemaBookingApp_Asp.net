@@ -23,7 +23,9 @@ namespace CinemaBookingApp2.Services
             var username = _configuration["SmtpSettings:Username"];
             var password = _configuration["SmtpSettings:Password"];
 
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password) || username == "TWÓJ_EMAIL@gmail.com")
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password) || 
+                username == "TWÓJ_EMAIL@gmail.com" || username == "YOUR_EMAIL@gmail.com" || 
+                username.Contains("YOUR_", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine($"[Email System] Pominęto wysyłkę e-maila do {email}. Uzupełnij dane SMTP w appsettings.json.");
                 return;

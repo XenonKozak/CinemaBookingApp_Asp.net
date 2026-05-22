@@ -153,6 +153,7 @@ import { ref, onMounted } from 'vue';
 import api from '../api/axios.js';
 import AdminMovieForm from '../components/AdminMovieForm.vue';
 import AdminScreeningForm from '../components/AdminScreeningForm.vue';
+import { formatScreeningDateTime, toApiScreeningTime, notifyRepertoireRefresh } from '../utils/screeningTime.js';
 
 const activeTab = ref('movies');
 
@@ -196,8 +197,7 @@ function getMovieTitle(id) {
 }
 
 function formatTime(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return formatScreeningDateTime(dateStr);
 }
 
 // Movies
@@ -225,7 +225,9 @@ async function handleMovieSubmit(data) {
       formData.append('file', file);
       await api.post(`/Movie/${movieId}/poster`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
     }
-    closeMovieForm(); await fetchData();
+    closeMovieForm();
+    await fetchData();
+    notifyRepertoireRefresh();
   } catch (e) {
     const msg = e.response?.data?.title || e.response?.data?.message || e.response?.data;
     formError.value = typeof msg === 'string' ? msg : 'Wystąpił błąd zapisu filmu (sprawdź połączenie z API).';
@@ -252,7 +254,7 @@ async function handleScreeningSubmit(data) {
   formLoading.value = true; formError.value = '';
   const payload = {
     movieId: data.movieId,
-    screeningTime: new Date(data.screeningTime).toISOString(),
+    screeningTime: toApiScreeningTime(data.screeningTime),
   };
   try {
     if (editingScreening.value) {
@@ -262,9 +264,15 @@ async function handleScreeningSubmit(data) {
       await api.post('/Screening', payload);
       showToast('success', `Dodano nowy seans.`);
     }
-    closeScreeningForm(); await fetchData();
+    closeScreeningForm();
+    await fetchData();
+    notifyRepertoireRefresh();
   } catch (e) {
-    formError.value = 'Wystąpił błąd zapisu seansu.';
+    const msg = e.response?.data;
+    formError.value =
+      typeof msg === 'string' && msg
+        ? msg
+        : 'Wystąpił błąd zapisu seansu (sprawdź czy ta godzina już nie istnieje).';
   } finally { formLoading.value = false; }
 }
 
@@ -274,7 +282,9 @@ async function handleScreeningDelete() {
   try {
     await api.delete(`/Screening/${deletingScreening.value.id}`);
     showToast('success', `Seans usunięty.`);
-    deletingScreening.value = null; await fetchData();
+    deletingScreening.value = null;
+    await fetchData();
+    notifyRepertoireRefresh();
   } catch { showToast('error', 'Nie udało się usunąć seansu.'); }
   finally { deleteLoading.value = false; }
 }

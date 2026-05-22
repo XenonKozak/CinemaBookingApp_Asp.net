@@ -34,7 +34,7 @@ namespace CinemaBookingApp2
             var useRedis = builder.Configuration.GetValue<bool>("UseRedis", true);
             var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
 
-            if (useRedis && !string.IsNullOrEmpty(redisConnectionString))
+            if (useRedis && !string.IsNullOrEmpty(redisConnectionString) && !redisConnectionString.Contains("YOUR_", StringComparison.OrdinalIgnoreCase))
             {
                 builder.Services.AddStackExchangeRedisCache(options =>
                 {
@@ -86,8 +86,11 @@ namespace CinemaBookingApp2
 
 
             builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
-            builder.Services.AddHostedService<UserRegistrationEmailWorker>();
-            builder.Services.AddHostedService<TicketEmailWorker>();
+            if (ServiceBusConfig.IsEnabled(builder.Configuration))
+            {
+                builder.Services.AddHostedService<UserRegistrationEmailWorker>();
+                builder.Services.AddHostedService<TicketEmailWorker>();
+            }
 
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -106,14 +109,14 @@ namespace CinemaBookingApp2
 
             builder.Services.AddAuthorization();
 
-            // Configure CORS
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("FrontendPolicy", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://localhost:4200") // React/Vue/Vite/Angular ports
+                    policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:4200") // React/Vue/Vite/Angular ports
                           .AllowAnyHeader()
-                          .AllowAnyMethod();
+                          .AllowAnyMethod()
+                          .AllowCredentials(); // Often needed for auth
                 });
             });
 

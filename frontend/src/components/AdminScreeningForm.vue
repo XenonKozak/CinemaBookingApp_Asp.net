@@ -8,13 +8,21 @@
 
       <form @submit.prevent="handleSubmit" class="form">
         <div class="form-group" v-if="!isEdit">
-          <label for="movieId">Wybierz film</label>
-          <select id="movieId" v-model="form.movieId" class="form-input" required>
-            <option disabled value="">-- wybierz film --</option>
-            <option v-for="m in movies" :key="m.id" :value="m.id">
-              {{ m.title }}
-            </option>
-          </select>
+          <label>Wybierz film</label>
+          <div class="movie-picker">
+            <button
+              v-for="m in movies"
+              :key="m.id"
+              type="button"
+              class="movie-picker-item"
+              :class="{ active: form.movieId === m.id }"
+              @click="form.movieId = m.id"
+            >
+              <span class="movie-picker-title">{{ m.title }}</span>
+              <span class="movie-picker-meta">{{ m.duration }} min</span>
+            </button>
+          </div>
+          <p v-if="!form.movieId" class="picker-hint">Wybierz film z listy powyżej.</p>
         </div>
 
         <div class="form-group">
@@ -43,6 +51,7 @@
 
 <script setup>
 import { reactive, computed, watch } from 'vue';
+import { toDatetimeLocalValue, defaultDatetimeLocal } from '../utils/screeningTime.js';
 
 const props = defineProps({
   screening: {
@@ -77,21 +86,15 @@ watch(
   (s) => {
     form.movieId = s?.movieId || '';
     
-    if (s?.screeningTime) {
-      const d = new Date(s.screeningTime);
-      const tzOffset = d.getTimezoneOffset() * 60000;
-      form.screeningTime = (new Date(d - tzOffset)).toISOString().slice(0, 16);
-    } else {
-      const now = new Date();
-      now.setHours(now.getHours() + 1);
-      const tzOffset = now.getTimezoneOffset() * 60000;
-      form.screeningTime = (new Date(now - tzOffset)).toISOString().slice(0, 16);
-    }
+    form.screeningTime = s?.screeningTime
+      ? toDatetimeLocalValue(s.screeningTime)
+      : defaultDatetimeLocal(1);
   },
   { immediate: true }
 );
 
 function handleSubmit() {
+  if (!isEdit.value && !form.movieId) return;
   emit('submit', { ...form });
 }
 </script>
@@ -117,5 +120,61 @@ function handleSubmit() {
   gap: 12px;
   justify-content: flex-end;
   padding-top: 8px;
+}
+
+.movie-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.movie-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.movie-picker-item:hover {
+  border-color: var(--accent-gold);
+  background: rgba(212, 168, 67, 0.08);
+}
+
+.movie-picker-item.active {
+  border-color: var(--accent-gold);
+  background: rgba(212, 168, 67, 0.15);
+  box-shadow: 0 0 0 2px rgba(212, 168, 67, 0.2);
+}
+
+.movie-picker-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.movie-picker-meta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-gold-light);
+  flex-shrink: 0;
+}
+
+.picker-hint {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 </style>

@@ -24,7 +24,8 @@ namespace CinemaBookingApp2.Configurations
             CreateMap<Movie, GetMovieDto>().ReverseMap();
             CreateMap<Movie, CreateMovieDto>().ReverseMap();
             CreateMap<Movie, UpdateMovieDto>().ReverseMap();
-            CreateMap<Movie, GetMovieWithScreeningsDto>().ReverseMap();
+            CreateMap<Movie, GetMovieWithScreeningsDto>()
+                .ForMember(dest => dest.Screenings, opt => opt.MapFrom(src => src.Screenings));
 
             // Screening Maps
             CreateMap<Screening, GetScreeningDto>()

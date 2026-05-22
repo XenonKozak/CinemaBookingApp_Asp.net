@@ -17,6 +17,7 @@ namespace CinemaBookingApp2.Controllers
         }
 
         [HttpGet]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<ActionResult<IEnumerable<GetScreeningDto>>> GetAll()
         {
             var screenings = await _screeningService.GetScreenings();
