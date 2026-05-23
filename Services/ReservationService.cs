@@ -31,7 +31,10 @@ namespace CinemaBookingApp2.Services
 
         public async Task<IEnumerable<GetReservationDto>> GetAll()
         {
-          var reservation = await _context.Reservations.ToListAsync();
+            var reservation = await _context.Reservations
+                .Include(r => r.Screening)
+                    .ThenInclude(s => s.Movie)
+                .ToListAsync();
             if (reservation is null)
             {
                 return null;
@@ -53,8 +56,10 @@ namespace CinemaBookingApp2.Services
 
         public async Task<GetReservationDto> GetById(Guid id)
         { 
-          var reservation = await _context.Reservations.SingleOrDefaultAsync(
-          r => r.Id == id);
+            var reservation = await _context.Reservations
+                .Include(r => r.Screening)
+                    .ThenInclude(s => s.Movie)
+                .SingleOrDefaultAsync(r => r.Id == id);
             if (reservation is null)
             {
                 return null;
