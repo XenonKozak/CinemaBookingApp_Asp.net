@@ -39,16 +39,16 @@ namespace CinemaBookingApp2.Controllers
                     {
                         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1));
                         DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(originalComment, "pl", cancellationToken: cts.Token);
-                        review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString());
+                        review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString(), originalComment);
                     }
                     catch (Exception)
                     {
-                        review.Sentiment = GetSentiment(review.Rating, "Unknown");
+                        review.Sentiment = GetSentiment(review.Rating, "Unknown", originalComment);
                     }
                 }
                 else
                 {
-                    review.Sentiment = GetSentiment(review.Rating, "Unknown");
+                    review.Sentiment = GetSentiment(review.Rating, "Unknown", originalComment);
                 }
 
                 // Cenzurujemy komentarz dopiero PO analizie sentymentu, a przed zapisem do bazy!
@@ -125,16 +125,16 @@ namespace CinemaBookingApp2.Controllers
                     {
                         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1));
                         DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(originalComment, "pl", cancellationToken: cts.Token);
-                        review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString());
+                        review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString(), originalComment);
                     }
                     catch (Exception)
                     {
-                        review.Sentiment = GetSentiment(review.Rating, "Unknown");
+                        review.Sentiment = GetSentiment(review.Rating, "Unknown", originalComment);
                     }
                 }
                 else
                 {
-                    review.Sentiment = GetSentiment(review.Rating, "Unknown");
+                    review.Sentiment = GetSentiment(review.Rating, "Unknown", originalComment);
                 }
 
                 // Cenzurujemy komentarz dopiero PO analizie sentymentu, a przed zapisem do bazy!
@@ -205,8 +205,29 @@ namespace CinemaBookingApp2.Controllers
             return censoredText;
         }
 
-        private string GetSentiment(int rating, string? textSentiment)
+        private string GetSentiment(int rating, string? textSentiment, string comment)
         {
+            // Szybki fallback na twarde polskie słowa, które AI może uznać za Neutralne z braku kontekstu
+            if (!string.IsNullOrWhiteSpace(comment))
+            {
+                string lowerComment = comment.ToLower();
+                
+                var hardNegativeWords = new[] { "chuj", "gówn", "srac", "pizd", "kurw" };
+                var hardPositiveWords = new[] { "zajebi", "zajebis", "zajebist" };
+
+                // Sprawdzamy najpierw pozytywne wulgaryzmy (np. "zajebisty")
+                foreach (var w in hardPositiveWords)
+                {
+                    if (lowerComment.Contains(w)) return "Positive";
+                }
+
+                // Następnie negatywne wulgaryzmy
+                foreach (var w in hardNegativeWords)
+                {
+                    if (lowerComment.Contains(w)) return "Negative";
+                }
+            }
+
             // Jeśli AI wykryło jednoznaczny sentyment, ufamy mu.
             if (textSentiment == "Positive" || textSentiment == "Negative")
             {
