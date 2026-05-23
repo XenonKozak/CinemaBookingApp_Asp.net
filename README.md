@@ -33,16 +33,15 @@ Katalog: `/frontend`
 Aplikacja stworzona przy użyciu **Vue 3** oraz bundlera **Vite**. Zapewnia błyskawiczne działanie (Single Page Application) i kładzie potężny nacisk na odczucia wizualne użytkownika.
 
 ### Galeria Interfejsu (Web)
-<p align="center">
-  <img src="docs/images/home.png" alt="Ekran Główny i Repertuar" width="800"/>
-  <br/><em>Ekran główny i nowoczesny repertuar z efektem Glassmorphism</em><br/><br/>
-  
-  <img src="docs/images/seat-picker.png" alt="Seat Picker" width="800"/>
-  <br/><em>Interaktywny widok wyboru miejsc w sali kinowej</em><br/><br/>
-  
-  <img src="docs/images/success.png" alt="Ekran Sukcesu" width="800"/>
-  <br/><em>Dedykowany widok potwierdzenia zakupu biletów</em>
-</p>
+
+![Ekran Główny i Repertuar](docs/images/home.png)
+*Ekran główny i nowoczesny repertuar z efektem Glassmorphism*
+
+![Seat Picker](docs/images/seat-picker.png)
+*Interaktywny widok wyboru miejsc w sali kinowej*
+
+![Ekran Sukcesu](docs/images/success.png)
+*Dedykowany widok potwierdzenia zakupu biletów*
 
 ### Najważniejsze cechy:
 - **Premium UX/UI**: Zaawansowany system projektowania z mocno zaokrąglonymi kształtami, pływającymi etykietami formularzy (Floating Labels znane z Material Design), płynnymi animacjami przejść oraz responsywnością.
@@ -57,6 +56,23 @@ Aplikacja stworzona przy użyciu **Vue 3** oraz bundlera **Vite**. Zapewnia bły
 Katalog: `/mobile`
 
 Natywna aplikacja na systemy iOS i Android zbudowana w środowisku **React Native** (z użyciem Expo). Umożliwia użytkownikom błyskawiczny dostęp do repertuaru i własnych biletów.
+
+### Galeria Interfejsu (Mobile)
+
+<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+  <div style="text-align: center;">
+    <img src="docs/images/mobile-home.jpg" alt="Ekran Główny (Mobile)" height="400"/>
+    <br/><em>Repertuar filmów</em>
+  </div>
+  <div style="text-align: center;">
+    <img src="docs/images/mobile-seat-picker.jpg" alt="Seat Picker (Mobile)" height="400"/>
+    <br/><em>Wybór miejsc</em>
+  </div>
+  <div style="text-align: center;">
+    <img src="docs/images/mobile-success.jpg" alt="Ekran Sukcesu (Mobile)" height="400"/>
+    <br/><em>Potwierdzenie rezerwacji</em>
+  </div>
+</div>
 
 ### Najważniejsze cechy:
 - **Natywna Płynność**: Animowane widoki i przejścia (np. wykorzystanie interfejsu `Animated` do płynnego, sprężystego wysuwania paska z potwierdzeniem wyboru miejsc z dołu ekranu).
