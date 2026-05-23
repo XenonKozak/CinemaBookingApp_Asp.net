@@ -33,6 +33,12 @@ namespace CinemaBookingApp2.Controllers
                 review.Id = Guid.NewGuid().ToString();
                 review.CreatedAt = DateTime.UtcNow;
 
+                // Cenzura wulgaryzmów przed zapisem i analizą AI!
+                if (!string.IsNullOrWhiteSpace(review.Comment))
+                {
+                    review.Comment = CensorProfanity(review.Comment);
+                }
+
                 // AI Sentiment Analysis
                 if (_aiClient != null && !string.IsNullOrWhiteSpace(review.Comment))
                 {
@@ -77,6 +83,34 @@ namespace CinemaBookingApp2.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        private string CensorProfanity(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return text;
+
+            var badWords = new[] 
+            { 
+                "kurw", "jeb", "pierd", "chuj", "pizd", "gówn", "srac", 
+                "fuck", "shit", "bitch", "asshole"
+            };
+
+            string censoredText = text;
+            foreach (var word in badWords)
+            {
+                var regex = new System.Text.RegularExpressions.Regex(
+                    @"\b(" + word + @"\w*)\b", 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                censoredText = regex.Replace(censoredText, m =>
+                {
+                    string matched = m.Value;
+                    if (matched.Length <= 2) return new string('*', matched.Length);
+                    return matched[0] + new string('*', matched.Length - 2) + matched[matched.Length - 1];
+                });
+            }
+
+            return censoredText;
         }
     }
 }

@@ -227,7 +227,8 @@ const styles = StyleSheet.create({
   reviewDate: {
     color: theme.colors.textMuted,
     fontSize: 12,
-    flexShrink: 0,
+    minWidth: 85,
+    textAlign: 'right',
   },
   starsContainer: {
     flexDirection: 'row',
