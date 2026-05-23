@@ -38,7 +38,7 @@ namespace CinemaBookingApp2.Controllers
                     try
                     {
                         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1));
-                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(originalComment, cancellationToken: cts.Token);
+                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(originalComment, "pl", cancellationToken: cts.Token);
                         review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString());
                     }
                     catch (Exception)
@@ -124,7 +124,7 @@ namespace CinemaBookingApp2.Controllers
                     try
                     {
                         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1));
-                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(originalComment, cancellationToken: cts.Token);
+                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(originalComment, "pl", cancellationToken: cts.Token);
                         review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString());
                     }
                     catch (Exception)
@@ -207,15 +207,13 @@ namespace CinemaBookingApp2.Controllers
 
         private string GetSentiment(int rating, string? textSentiment)
         {
-            if (textSentiment == "Positive" || textSentiment == "Negative" || textSentiment == "Neutral" || textSentiment == "Mixed")
+            // Jeśli AI wykryło jednoznaczny sentyment, ufamy mu.
+            if (textSentiment == "Positive" || textSentiment == "Negative")
             {
-                // Unikaj skrajnych sprzeczności (np. 5 gwiazdek i plakietka Negatywna, albo 1 gwiazdka i plakietka Pozytywna):
-                if (rating >= 4 && textSentiment == "Negative") return "Neutral";
-                if (rating <= 2 && textSentiment == "Positive") return "Neutral";
                 return textSentiment;
             }
 
-            // Inteligentny fallback na podstawie liczby gwiazdek:
+            // W przypadku Mixed, Neutral lub Unknown, polegamy na gwiazdkach:
             if (rating >= 4) return "Positive";
             if (rating == 3) return "Neutral";
             return "Negative";
