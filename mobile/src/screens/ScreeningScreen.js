@@ -104,14 +104,13 @@ export default function ScreeningScreen({ route, navigation }) {
 
     if (booked.length > 0) {
       const labels = booked.map((s) => `${s.row}${s.seat}`).join(', ');
-      showToast(
-        'success',
-        booked.length === 1
-          ? `Zarezerwowano miejsce ${labels}! 🎉`
-          : `Zarezerwowano ${booked.length} miejsca: ${labels} 🎉`
-      );
       setSelectedSeats([]);
-      await fetchScreening();
+      navigation.replace('Success', {
+        title: screening.movieTitle,
+        imageUrl: screening.imageUrl,
+        seats: labels
+      });
+      return;
     }
 
     if (hadError) {

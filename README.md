@@ -82,6 +82,24 @@ Natywna aplikacja na systemy iOS i Android zbudowana w środowisku **React Nativ
 
 ---
 
+## 🧪 Testy E2E (Playwright)
+
+Aplikacja webowa została w pełni pokryta testami end-to-end (E2E) przy użyciu nowoczesnego frameworka **Playwright**. Testy symulują rzeczywiste zachowania użytkownika w przeglądarce i automatycznie weryfikują najważniejsze ścieżki biznesowe:
+
+- **Pełna izolacja (Mockowanie API)**: Testy działają niezależnie od backendu dzięki przechwytywaniu zapytań sieciowych (repertuar, szczegóły seansów, autoryzacja logowania).
+- **Złożone scenariusze testowe**:
+  - `home.spec.js` - Walidacja poprawnego renderowania strony głównej oraz siatki repertuaru.
+  - `auth.spec.js` - Przepływ logowania, wstrzykiwanie zmockowanego tokena JWT i weryfikacja strażników nawigacji (Route Guards) we Vue Router.
+  - `reservation.spec.js` - Walidacja procesu interaktywnej rezerwacji biletów (Seat Picker), sprawdzanie klas miejsc dostępnych/zajętych i przekierowań ekranów.
+
+Aby uruchomić testy, przejdź do katalogu `frontend` i skorzystaj z wbudowanych komend:
+```bash
+npm run test:e2e       # Uruchomienie w tle (headless)
+npm run test:e2e:ui    # Uruchomienie z interaktywnym interfejsem graficznym (UI)
+```
+
+---
+
 ## Uruchomienie lokalne
 
 ### 1. Backend (.NET)

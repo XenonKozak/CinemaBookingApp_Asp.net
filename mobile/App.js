@@ -10,6 +10,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import ScreeningScreen from './src/screens/ScreeningScreen';
 import MyReservationsScreen from './src/screens/MyReservationsScreen';
 import AdminScreen from './src/screens/AdminScreen';
+import SuccessScreen from './src/screens/SuccessScreen';
 import { AuthProvider } from './src/context/AuthContext';
 import { theme } from './src/theme/theme';
 
@@ -49,6 +50,11 @@ function AppNavigator() {
         name="MyReservations"
         component={MyReservationsScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Success"
+        component={SuccessScreen}
+        options={{ headerShown: false, animation: 'fade' }}
       />
       <Stack.Screen name="Admin" component={AdminScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
