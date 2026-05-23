@@ -134,30 +134,20 @@ async function handleReservation() {
 
   reserving.value = true;
   const reservationDate = new Date().toISOString();
-  const booked = [];
-  let hadError = false;
 
-  for (const seat of selectedSeats.value) {
-    try {
-      await api.post('/Reservation', {
-        seatNumber: seat.seat,
-        row: seat.row,
-        reservationDate,
-        screeningId: route.params.id,
-      });
-      booked.push(seat);
-    } catch (e) {
-      hadError = true;
-      if (e.response?.status === 401) {
-        showToast('error', 'Musisz być zalogowany, aby dokonać rezerwacji.');
-        reserving.value = false;
-        return;
-      }
-    }
-  }
+  try {
+    const seatsPayload = selectedSeats.value.map(seat => ({
+      seatNumber: seat.seat,
+      row: seat.row
+    }));
 
-  if (booked.length > 0) {
-    const labels = booked.map((s) => `${s.row}${s.seat}`).join(', ');
+    await api.post('/Reservation', {
+      seats: seatsPayload,
+      reservationDate,
+      screeningId: route.params.id,
+    });
+
+    const labels = selectedSeats.value.map((s) => `${s.row}${s.seat}`).join(', ');
     router.push({
       name: 'Success',
       query: {
@@ -166,19 +156,15 @@ async function handleReservation() {
         imageUrl: screening.value.imageUrl || ''
       }
     });
-    return;
+  } catch (e) {
+    if (e.response?.status === 401) {
+      showToast('error', 'Musisz być zalogowany, aby dokonać rezerwacji.');
+    } else {
+      showToast('error', 'Część miejsc nie została zarezerwowana (może być już zajęta).');
+    }
+  } finally {
+    reserving.value = false;
   }
-
-  if (hadError) {
-    showToast(
-      'error',
-      booked.length > 0
-        ? 'Część miejsc nie została zarezerwowana (może być już zajęta).'
-        : 'Nie udało się zarezerwować wybranych miejsc.'
-    );
-  }
-
-  reserving.value = false;
 }
 
 function showToast(type, message) {

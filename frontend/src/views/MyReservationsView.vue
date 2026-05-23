@@ -19,15 +19,15 @@
 
       <!-- Content -->
       <div v-else-if="reservations.length > 0" class="reservations-grid">
-        <div v-for="res in reservations" :key="res.id" class="reservation-card glass-card">
+        <div v-for="res in reservations" :key="res.bookingId" class="reservation-card glass-card">
           <div class="res-icon" :style="res.imageUrl ? `background-image: url(${res.imageUrl}); background-size: cover; background-position: center; border: 1px solid var(--border);` : ''">
             <span v-if="!res.imageUrl">🎬</span>
           </div>
           <div class="res-details">
             <h3 class="res-movie">{{ res.movieTitle }}</h3>
             <div class="res-meta">
-              <span class="badge badge-gold">Rząd {{ res.row }}</span>
-              <span class="badge badge-purple">Miejsce {{ res.seatNumber }}</span>
+              <span class="badge badge-gold">{{ res.seats.length }} {{ res.seats.length === 1 ? 'miejsce' : 'miejsca' }}</span>
+              <span class="badge badge-purple">{{ res.seats.map(s => `${s.row}${s.seatNumber}`).join(', ') }}</span>
             </div>
             <p class="res-date">
               <Calendar size="14" style="margin-right: 6px;" />
@@ -50,11 +50,11 @@
             </router-link>
             <button 
               class="btn-cancel" 
-              @click="cancelReservation(res.id)"
+              @click="cancelReservation(res.bookingId)"
               title="Zrezygnuj z rezerwacji"
             >
               <Trash2 size="14" />
-              Odwołaj
+              Odwołaj całość
             </button>
           </div>
         </div>
@@ -85,7 +85,26 @@ async function fetchMyReservations() {
   loading.value = true;
   try {
     const res = await api.get('/Reservation/my');
-    reservations.value = res.data;
+    
+    // Grupowanie rezerwacji po bookingId
+    const grouped = {};
+    for (const item of res.data) {
+      if (!grouped[item.bookingId]) {
+        grouped[item.bookingId] = {
+          bookingId: item.bookingId,
+          movieId: item.movieId,
+          movieTitle: item.movieTitle,
+          imageUrl: item.imageUrl,
+          reservationDate: item.reservationDate,
+          seats: []
+        };
+      }
+      grouped[item.bookingId].seats.push({
+        row: item.row,
+        seatNumber: item.seatNumber
+      });
+    }
+    reservations.value = Object.values(grouped).sort((a, b) => new Date(b.reservationDate) - new Date(a.reservationDate));
   } catch (e) {
     error.value = 'Nie udało się pobrać Twoich rezerwacji.';
   } finally {

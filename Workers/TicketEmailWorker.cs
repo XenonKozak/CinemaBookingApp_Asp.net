@@ -64,7 +64,7 @@ namespace CinemaBookingApp2.Workers
 
                 if (ticketMessage != null)
                 {
-                    Console.WriteLine($"[ServiceBus Worker] Otrzymano zdarzenie o rezerwacji: {ticketMessage.ReservationId}");
+                    Console.WriteLine($"[ServiceBus Worker] Otrzymano zdarzenie o rezerwacji: {ticketMessage.BookingId}");
 
                     // Rezolwujemy DbContext w zakresie (scope), jako że DbContext jest Scoped, a Worker jest Singletonem
                     using var scope = _serviceProvider.CreateScope();
@@ -80,6 +80,8 @@ namespace CinemaBookingApp2.Workers
 
                         if (ticketMessage.IsCancellation)
                         {
+                            var seatsList = string.Join("<br>", ticketMessage.Seats.Select(s => $"Rząd: {s.Row}, Miejsce: {s.SeatNumber}"));
+                            
                             emailSubject = $"Anulowanie rezerwacji na film: {screening.Movie.Title}";
                             emailBody = $@"
                                 <h3>Witaj {user.UserName},</h3>
@@ -88,10 +90,9 @@ namespace CinemaBookingApp2.Workers
                                 <h4>Szczegóły anulowanego biletu:</h4>
                                 <ul>
                                     <li><strong>Film:</strong> {screening.Movie.Title}</li>
-                                    <li><strong>Rząd:</strong> {ticketMessage.Row}</li>
-                                    <li><strong>Miejsce:</strong> {ticketMessage.SeatNumber}</li>
+                                    <li><strong>Zarezerwowane miejsca:</strong><br>{seatsList}</li>
                                     <li><strong>Data seansu:</strong> {ticketMessage.ReservationDate:dd.MM.yyyy HH:mm}</li>
-                                    <li><strong>Kod rezerwacji:</strong> {ticketMessage.ReservationId}</li>
+                                    <li><strong>Kod rezerwacji:</strong> {ticketMessage.BookingId}</li>
                                 </ul>
                                 <br>
                                 <p>Mamy nadzieję, że odwiedzisz nas w innym terminie!</p>
@@ -99,6 +100,8 @@ namespace CinemaBookingApp2.Workers
                         }
                         else
                         {
+                            var seatsList = string.Join("<br>", ticketMessage.Seats.Select(s => $"Rząd: {s.Row}, Miejsce: {s.SeatNumber}"));
+
                             emailSubject = $"Twój bilet na film: {screening.Movie.Title}!";
                             emailBody = $@"
                                 <h3>Witaj {user.UserName}!</h3>
@@ -107,10 +110,9 @@ namespace CinemaBookingApp2.Workers
                                 <h4>Szczegóły Twojego biletu:</h4>
                                 <ul>
                                     <li><strong>Film:</strong> {screening.Movie.Title}</li>
-                                    <li><strong>Rząd:</strong> {ticketMessage.Row}</li>
-                                    <li><strong>Miejsce:</strong> {ticketMessage.SeatNumber}</li>
+                                    <li><strong>Zarezerwowane miejsca:</strong><br>{seatsList}</li>
                                     <li><strong>Data seansu:</strong> {ticketMessage.ReservationDate:dd.MM.yyyy HH:mm}</li>
-                                    <li><strong>Kod rezerwacji:</strong> {ticketMessage.ReservationId}</li>
+                                    <li><strong>Kod rezerwacji:</strong> {ticketMessage.BookingId}</li>
                                 </ul>
                                 <br>
                                 <p>Życzymy udanego seansu!</p>
@@ -123,7 +125,7 @@ namespace CinemaBookingApp2.Workers
                     }
                     else
                     {
-                        Console.WriteLine($"[ServiceBus Worker] Nie znaleziono użytkownika lub seansu dla rezerwacji {ticketMessage.ReservationId}");
+                        Console.WriteLine($"[ServiceBus Worker] Nie znaleziono użytkownika lub seansu dla rezerwacji {ticketMessage.BookingId}");
                     }
                 }
 

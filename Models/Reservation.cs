@@ -16,13 +16,15 @@ namespace CinemaBookingApp2.Models
         public Screening Screening { get; set; } = null!;
         public Guid UserId { get; private set; }
         public User User { get; set; } = null!;
+        public Guid BookingId { get; private set; }
 
         protected Reservation() {}
 
-        public Reservation(Guid id, int seatNumber, string row, DateTime reservationDate, Guid screeningId, Guid userId)
+        public Reservation(Guid id, int seatNumber, string row, DateTime reservationDate, Guid screeningId, Guid userId, Guid bookingId)
         {
             ScreeningId = screeningId;
             UserId = userId;
+            BookingId = bookingId == Guid.Empty ? Guid.NewGuid() : bookingId;
             Id = id == Guid.Empty? Guid.NewGuid() : id;
             ReservationDate = reservationDate;
             UpdateReservation(seatNumber, row);
@@ -44,9 +46,9 @@ namespace CinemaBookingApp2.Models
             Row = row;
         }
 
-        public static Reservation CreateReservation(Guid id, int seatNumber, string row, DateTime reservationDate, Guid screeningId, Guid userId)
+        public static Reservation CreateReservation(Guid id, int seatNumber, string row, DateTime reservationDate, Guid screeningId, Guid userId, Guid bookingId)
         {
-            return new Reservation(id, seatNumber, row, reservationDate, screeningId, userId);
+            return new Reservation(id, seatNumber, row, reservationDate, screeningId, userId, bookingId);
         }
 
 

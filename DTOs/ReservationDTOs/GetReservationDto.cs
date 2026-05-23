@@ -6,6 +6,7 @@ namespace CinemaBookingApp2.DTOs.ReservationDto
     public class GetReservationDto
     {
         public Guid Id { get; set; }
+        public Guid BookingId { get; set; }
         [Required]
         [Range(1, 10)]
         public int SeatNumber { get; set; }

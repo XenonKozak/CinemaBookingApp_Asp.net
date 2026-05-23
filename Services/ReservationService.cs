@@ -65,38 +65,56 @@ namespace CinemaBookingApp2.Services
 
         public async Task<Guid?>Create(CreateReservationDto dto, Guid userId)
         {
-            if (!_rows.Contains(dto.Row))
+            if (dto.Seats == null || !dto.Seats.Any())
             {
                 return null;
             }
 
-            var alreadyExist = await _context.Reservations.AnyAsync(r =>
-            r.SeatNumber == dto.SeatNumber &&
-            r.Row == dto.Row &&
-            r.ReservationDate == dto.ReservationDate &&
-            r.ScreeningId == dto.ScreeningId);
-
-            if (alreadyExist)
+            foreach (var seat in dto.Seats)
             {
-                return null;
+                if (!_rows.Contains(seat.Row))
+                {
+                    return null;
+                }
+
+                var alreadyExist = await _context.Reservations.AnyAsync(r =>
+                    r.SeatNumber == seat.SeatNumber &&
+                    r.Row == seat.Row &&
+                    r.ReservationDate == dto.ReservationDate &&
+                    r.ScreeningId == dto.ScreeningId);
+
+                if (alreadyExist)
+                {
+                    return null; // Zwracamy null jeśli JAKIEKOLWIEK wybrane miejsce jest już zajęte
+                }
             }
 
-            var reservation = Reservation.CreateReservation(Guid.NewGuid(), dto.SeatNumber, dto.Row, dto.ReservationDate, dto.ScreeningId, userId);
-            _context.Reservations.Add(reservation);
-            await _context.SaveChangesAsync();
-
+            var bookingId = Guid.NewGuid();
             var message = new CinemaBookingApp2.DTOs.ServiceBusDTOs.TicketMessageDto
             {
-                ReservationId = reservation.Id,
-                SeatNumber = reservation.SeatNumber,
-                Row = reservation.Row,
-                ScreeningId = reservation.ScreeningId,
-                UserId = reservation.UserId,
-                ReservationDate = reservation.ReservationDate
+                BookingId = bookingId,
+                ScreeningId = dto.ScreeningId,
+                UserId = userId,
+                ReservationDate = dto.ReservationDate,
+                Seats = new List<CinemaBookingApp2.DTOs.ServiceBusDTOs.SeatInfo>()
             };
+
+            foreach (var seat in dto.Seats)
+            {
+                var reservation = Reservation.CreateReservation(Guid.NewGuid(), seat.SeatNumber, seat.Row, dto.ReservationDate, dto.ScreeningId, userId, bookingId);
+                _context.Reservations.Add(reservation);
+                
+                message.Seats.Add(new CinemaBookingApp2.DTOs.ServiceBusDTOs.SeatInfo
+                {
+                    SeatNumber = seat.SeatNumber,
+                    Row = seat.Row
+                });
+            }
+
+            await _context.SaveChangesAsync();
             await _serviceBusService.SendMessageAsync(message, "ticket-queue");
 
-            return reservation.Id;
+            return bookingId;
         }
 
         public async Task<bool> Update(Guid id, UpdateReservationDto dto)
@@ -114,31 +132,41 @@ namespace CinemaBookingApp2.Services
             return true;
         }
 
-        public async Task<bool> Delete(Guid id, Guid userId, string role)
+        public async Task<bool> Delete(Guid bookingId, Guid userId, string role)
         {
-            var reservation = await _context.Reservations.SingleOrDefaultAsync(r => r.Id == id);
-            if (reservation == null)
+            var reservations = await _context.Reservations.Where(r => r.BookingId == bookingId).ToListAsync();
+            if (reservations == null || !reservations.Any())
+            {
+                // Fallback na wypadek starego Id
+                var singleRes = await _context.Reservations.SingleOrDefaultAsync(r => r.Id == bookingId);
+                if (singleRes != null)
+                {
+                    reservations = new List<Reservation> { singleRes };
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            // Sprawdzamy czy użytkownik ma prawo (wystarczy sprawdzić pierwszy z brzegu)
+            if (reservations.First().UserId != userId && role != "Admin")
             {
                 return false;
             }
 
-            if (reservation.UserId != userId && role != "Admin")
-            {
-                return false;
-            }
-
-            _context.Reservations.Remove(reservation);
+            _context.Reservations.RemoveRange(reservations);
             await _context.SaveChangesAsync();
 
+            var first = reservations.First();
             var message = new CinemaBookingApp2.DTOs.ServiceBusDTOs.TicketMessageDto
             {
-                ReservationId = reservation.Id,
-                SeatNumber = reservation.SeatNumber,
-                Row = reservation.Row,
-                ScreeningId = reservation.ScreeningId,
-                UserId = reservation.UserId,
-                ReservationDate = reservation.ReservationDate,
-                IsCancellation = true
+                BookingId = first.BookingId,
+                ScreeningId = first.ScreeningId,
+                UserId = first.UserId,
+                ReservationDate = first.ReservationDate,
+                IsCancellation = true,
+                Seats = reservations.Select(r => new CinemaBookingApp2.DTOs.ServiceBusDTOs.SeatInfo { SeatNumber = r.SeatNumber, Row = r.Row }).ToList()
             };
             await _serviceBusService.SendMessageAsync(message, "ticket-queue");
 
