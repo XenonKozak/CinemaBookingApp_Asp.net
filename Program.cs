@@ -58,7 +58,15 @@ namespace CinemaBookingApp2
             builder.Services.AddSingleton<IServiceBusService, ServiceBusService>();
             builder.Services.AddSingleton<IEmailSender, SmtpEmailSenderService>();
 
-            builder.Services.AddSingleton(x => new BlobServiceClient(builder.Configuration.GetConnectionString("BlobStorage")));
+            builder.Services.AddSingleton(x => 
+            {
+                var connString = builder.Configuration.GetConnectionString("BlobStorage");
+                if (string.IsNullOrEmpty(connString) || connString.Contains("TWOJ_BLOB"))
+                {
+                    return null;
+                }
+                return new BlobServiceClient(connString);
+            });
             builder.Services.AddScoped<IBlobService, BlobService>();
             
             // Rejestracja Azure Table Storage
