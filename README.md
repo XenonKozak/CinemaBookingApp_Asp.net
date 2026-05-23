@@ -6,9 +6,23 @@ Kompleksowy system rezerwacji biletów kinowych, składający się z wydajnego b
 ## 🏗️ Architektura Systemu
 
 System opiera się na 3 głównych filarach:
-1. **Backend API (.NET C#)**: Centralny serwer odpowiadający za logikę biznesową, autoryzację JWT, zarządzanie repertuarem kina, salami oraz obsługę transakcji i rezerwacji biletów.
+1. **Backend API (.NET C#)**: Zaawansowane Web API realizujące pełną logikę biznesową, autoryzację JWT, zarządzanie salami i repertuarem, asynchroniczną wysyłkę e-maili i system rezerwacji biletów oparty na chmurze Microsoft Azure.
 2. **Frontend Web (Vue.js)**: Responsywna wersja przeglądarkowa dla klientów oraz pełnoprawny panel administratora.
 3. **Frontend Mobile (React Native)**: Natywna aplikacja mobilna oferująca najwyższy komfort rezerwacji biletów bezpośrednio ze smartfona.
+
+---
+
+## ☁️ Architektura Chmurowa i Backend (Microsoft Azure)
+
+Aplikacja backendowa (C# .NET) została zaprojektowana zgodnie z dobrymi praktykami tworzenia skalowalnych systemów, wykorzystując szeroki wachlarz usług chmury **Microsoft Azure**:
+
+- **Azure SQL Database (Replikacja)**: Główna relacyjna baza danych obsługująca repertuar, seanse, użytkowników i rezerwacje. Architektura uwzględnia replikację danych (odczyt/zapis) dla zwiększenia wydajności i niezawodności.
+- **Azure Service Bus**: Zaawansowana kolejka komunikatów pozwalająca na całkowite zrównoleglenie procesów (np. kolejkowanie żądań wysłania e-maila po potwierdzeniu bądź odwołaniu rezerwacji), odciążająca główny wątek aplikacji.
+- **Azure Cosmos DB**: Nierelacyjna baza dokumentowa (NoSQL) dedykowana do przechowywania systemu opinii i recenzji filmów (Reviews), zapewniająca błyskawiczny odczyt rozproszonych danych na całym świecie.
+- **Azure Redis Cache**: Rozproszona pamięć podręczna wykorzystywana do drastycznego przyśpieszenia najczęściej odpytywanych endpointów i odciążania bazy SQL.
+- **Azure Blob Storage**: Przestrzeń do przetrzymywania plików binarnych – miniatur, plakatów filmowych i mediów aplikacji, połączona z endpointami API.
+- **Azure Worker Roles (Background Services)**: System zadań działających w tle w architekturze mikrousług/workerów (np. obsługa e-maili, cykliczne sprzątanie nieopłaconych rezerwacji), nasłuchujących komunikaty z Service Bus.
+- **Azure Auto Scaling**: Konfiguracja w chmurze zapewniająca automatyczne skalowanie instancji (scale-out / scale-in) w zależności od nagłych przyrostów obciążenia, jak np. po premierze kasowego hitu kinowego.
 
 ---
 
