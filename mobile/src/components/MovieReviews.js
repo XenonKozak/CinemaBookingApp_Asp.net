@@ -99,8 +99,8 @@ export default function MovieReviews({ movieId }) {
             reviews.map((review) => (
               <View key={review.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={styles.reviewAuthor}>{review.userId}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, flexWrap: 'wrap', marginRight: 8 }}>
+                    <Text style={styles.reviewAuthor} numberOfLines={1} ellipsizeMode="tail">{review.userId}</Text>
                     {review.sentiment && review.sentiment !== 'Unknown' && (
                       <View style={[styles.sentimentBadge, styles[`sentiment${review.sentiment}`]]}>
                         <Text style={[styles.sentimentText, styles[`sentimentText${review.sentiment}`]]}>
@@ -227,6 +227,7 @@ const styles = StyleSheet.create({
   reviewDate: {
     color: theme.colors.textMuted,
     fontSize: 12,
+    flexShrink: 0,
   },
   starsContainer: {
     flexDirection: 'row',
