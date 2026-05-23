@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CinemaBookingApp2.Interfaces;
 using CinemaBookingApp2.Models;
 using Microsoft.AspNetCore.Mvc;
+using Azure.AI.TextAnalytics;
 
 namespace CinemaBookingApp2.Controllers
 {
@@ -11,10 +12,12 @@ namespace CinemaBookingApp2.Controllers
     public class ReviewController : ControllerBase
     {
         private readonly IReviewService _reviewService;
+        private readonly TextAnalyticsClient _aiClient;
 
-        public ReviewController(IReviewService reviewService)
+        public ReviewController(IReviewService reviewService, TextAnalyticsClient aiClient = null)
         {
             _reviewService = reviewService;
+            _aiClient = aiClient;
         }
 
         [HttpPost]
@@ -29,6 +32,25 @@ namespace CinemaBookingApp2.Controllers
             {
                 review.Id = Guid.NewGuid().ToString();
                 review.CreatedAt = DateTime.UtcNow;
+
+                // AI Sentiment Analysis
+                if (_aiClient != null && !string.IsNullOrWhiteSpace(review.Comment))
+                {
+                    try
+                    {
+                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(review.Comment);
+                        review.Sentiment = documentSentiment.Sentiment.ToString(); // "Positive", "Negative", "Neutral" or "Mixed"
+                    }
+                    catch (Exception)
+                    {
+                        review.Sentiment = "Unknown";
+                    }
+                }
+                else
+                {
+                    review.Sentiment = "Unknown";
+                }
+
                 await _reviewService.AddReviewAsync(review);
                 return CreatedAtAction(nameof(GetReviewsForMovie), new { movieId = review.MovieId }, review);
             }

@@ -104,8 +104,15 @@ export default function MyReservationsScreen({ navigation }) {
           <Text style={styles.dateLabel}>Data rezerwacji</Text>
           <Text style={styles.dateValue}>{formatDate(item.reservationDate)}</Text>
         </View>
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12, gap: 12 }}>
         <TouchableOpacity 
-          style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radius.sm, borderColor: 'rgba(239, 68, 68, 0.4)', borderWidth: 1 }} 
+          style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: theme.radius.sm, backgroundColor: 'rgba(251, 191, 36, 0.1)', borderColor: 'rgba(251, 191, 36, 0.3)', borderWidth: 1 }} 
+          onPress={() => navigation.navigate('MovieReviews', { movieId: item.movieId, movieTitle: item.movieTitle })}>
+          <Text style={{ color: theme.colors.accentGold, fontSize: 13, fontWeight: '600' }}>⭐ Oceń</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: theme.radius.sm, borderColor: 'rgba(239, 68, 68, 0.4)', borderWidth: 1 }} 
           onPress={() => handleCancel(item.id)}>
           <Text style={{ color: theme.colors.danger, fontSize: 13, fontWeight: '600' }}>Anuluj</Text>
         </TouchableOpacity>

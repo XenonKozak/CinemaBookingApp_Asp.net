@@ -20,6 +20,9 @@ namespace CinemaBookingApp2.Models
 
         [JsonProperty(PropertyName = "comment")]
         public string Comment { get; set; }
+        
+        [JsonProperty(PropertyName = "sentiment")]
+        public string? Sentiment { get; set; }
 
         [JsonProperty(PropertyName = "createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

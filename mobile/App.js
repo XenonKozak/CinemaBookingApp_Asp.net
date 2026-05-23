@@ -11,6 +11,7 @@ import ScreeningScreen from './src/screens/ScreeningScreen';
 import MyReservationsScreen from './src/screens/MyReservationsScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import SuccessScreen from './src/screens/SuccessScreen';
+import MovieReviewsScreen from './src/screens/MovieReviewsScreen';
 import { AuthProvider } from './src/context/AuthContext';
 import { theme } from './src/theme/theme';
 
@@ -57,6 +58,7 @@ function AppNavigator() {
         options={{ headerShown: false, animation: 'fade' }}
       />
       <Stack.Screen name="Admin" component={AdminScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="MovieReviews" component={MovieReviewsScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

@@ -12,6 +12,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Azure.Storage.Blobs;
+using Azure.AI.TextAnalytics;
+using Azure;
+
 namespace CinemaBookingApp2
 {
     public class Program
@@ -84,6 +87,17 @@ namespace CinemaBookingApp2
                 return new ReviewService(client, databaseName, containerName);
             });
 
+            // Rejestracja AI Text Analytics
+            var aiEndpoint = builder.Configuration["AzureAI:Endpoint"];
+            var aiKey = builder.Configuration["AzureAI:Key"];
+            builder.Services.AddSingleton<TextAnalyticsClient>(s =>
+            {
+                if (string.IsNullOrEmpty(aiEndpoint) || aiEndpoint.Contains("TWOJ_ENDPOINT"))
+                {
+                    return null; // Zabezpieczenie: zwróci null dopóki użytkownik nie wpisze kluczy
+                }
+                return new TextAnalyticsClient(new Uri(aiEndpoint), new AzureKeyCredential(aiKey));
+            });
 
             builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
             if (ServiceBusConfig.IsEnabled(builder.Configuration))

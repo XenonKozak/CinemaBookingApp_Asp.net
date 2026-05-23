@@ -14,6 +14,7 @@ namespace CinemaBookingApp2.Configurations
         {
             CreateMap<Reservation, CreateReservationDto>().ReverseMap();
             CreateMap<Reservation, GetReservationDto>()
+                .ForMember(dest => dest.MovieId, opt => opt.MapFrom(src => src.Screening.MovieId))
                 .ForMember(dest => dest.MovieTitle, opt => opt.MapFrom(src => src.Screening.Movie.Title))
                 .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.Screening.Movie.ImageUrl));
             CreateMap<Reservation, UpdateReservationDto>().ReverseMap();

@@ -210,6 +210,28 @@ onMounted(fetchMyReservations);
   transform: translateY(-1px);
 }
 
+.btn-review {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  color: var(--accent-gold);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-review:hover {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.4);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 640px) {
   .reservation-card {
     flex-direction: column;

@@ -7,6 +7,7 @@ import ScreeningView from '../views/ScreeningView.vue';
 import AdminView from '../views/AdminView.vue';
 import MyReservationsView from '../views/MyReservationsView.vue';
 import SuccessView from '../views/SuccessView.vue';
+import MovieReviewsView from '../views/MovieReviewsView.vue';
 
 const routes = [
   {
@@ -47,6 +48,11 @@ const routes = [
     name: 'Success',
     component: SuccessView,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/movie/:id/reviews',
+    name: 'MovieReviews',
+    component: MovieReviewsView,
   },
 ];
 
