@@ -74,11 +74,11 @@
               </div>
             </div>
             <div class="screenings-list">
-              <div v-for="s in m.movieScreenings" :key="s.id" class="screening-row">
-                <span class="badge badge-purple" style="font-weight: 600">{{ formatTime(s.screeningTime) }}</span>
+              <div v-for="s in m.movieScreenings" :key="s.id" class="screening-pill">
+                <span class="screening-time">{{ formatTime(s.screeningTime) }}</span>
                 <div class="screening-actions">
-                  <button class="icon-btn" @click="openScreeningEdit(s)"><Pencil size="16" /></button>
-                  <button class="icon-btn danger" @click="confirmScreeningDelete(s)"><Trash2 size="16" /></button>
+                  <button class="icon-btn" @click="openScreeningEdit(s)" title="Edytuj"><Pencil size="14" /></button>
+                  <button class="icon-btn danger" @click="confirmScreeningDelete(s)" title="Usuń"><Trash2 size="14" /></button>
                 </div>
               </div>
             </div>
@@ -452,24 +452,37 @@ onMounted(fetchData);
 }
 
 .screenings-list {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
   border-top: 1px solid var(--border);
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
-.screening-row {
+.screening-pill {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
   background: var(--bg-input);
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  transition: all var(--transition-fast);
+}
+.screening-pill:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent-purple);
+}
+.screening-time {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary);
 }
 .screening-actions {
   display: flex;
-  gap: 12px;
+  gap: 6px;
+  border-left: 1px solid var(--border);
+  padding-left: 10px;
 }
 .icon-btn {
   background: none;
