@@ -41,17 +41,18 @@ namespace CinemaBookingApp2.Controllers
                 {
                     try
                     {
-                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(review.Comment);
-                        review.Sentiment = documentSentiment.Sentiment.ToString(); // "Positive", "Negative", "Neutral" or "Mixed"
+                        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1));
+                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(review.Comment, cancellationToken: cts.Token);
+                        review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString());
                     }
                     catch (Exception)
                     {
-                        review.Sentiment = "Unknown";
+                        review.Sentiment = GetSentiment(review.Rating, "Unknown");
                     }
                 }
                 else
                 {
-                    review.Sentiment = "Unknown";
+                    review.Sentiment = GetSentiment(review.Rating, "Unknown");
                 }
 
                 // Sprawdzamy, czy użytkownik wystawił już recenzję dla tego filmu
@@ -123,18 +124,19 @@ namespace CinemaBookingApp2.Controllers
                 if (_aiClient != null && !string.IsNullOrWhiteSpace(review.Comment))
                 {
                     try
-                     {
-                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(review.Comment);
-                        review.Sentiment = documentSentiment.Sentiment.ToString(); // "Positive", "Negative", "Neutral" or "Mixed"
+                    {
+                        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1));
+                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(review.Comment, cancellationToken: cts.Token);
+                        review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString());
                     }
                     catch (Exception)
                     {
-                        review.Sentiment = "Unknown";
+                        review.Sentiment = GetSentiment(review.Rating, "Unknown");
                     }
                 }
                 else
                 {
-                    review.Sentiment = "Unknown";
+                    review.Sentiment = GetSentiment(review.Rating, "Unknown");
                 }
 
                 review.CreatedAt = DateTime.UtcNow; // Aktualizujemy czas, żeby opinia trafiła na górę listy
@@ -197,6 +199,22 @@ namespace CinemaBookingApp2.Controllers
             }
 
             return censoredText;
+        }
+
+        private string GetSentiment(int rating, string? textSentiment)
+        {
+            if (textSentiment == "Positive" || textSentiment == "Negative" || textSentiment == "Neutral" || textSentiment == "Mixed")
+            {
+                // Unikaj skrajnych sprzeczności (np. 5 gwiazdek i plakietka Negatywna, albo 1 gwiazdka i plakietka Pozytywna):
+                if (rating >= 4 && textSentiment == "Negative") return "Neutral";
+                if (rating <= 2 && textSentiment == "Positive") return "Neutral";
+                return textSentiment;
+            }
+
+            // Inteligentny fallback na podstawie liczby gwiazdek:
+            if (rating >= 4) return "Positive";
+            if (rating == 3) return "Neutral";
+            return "Negative";
         }
     }
 }
