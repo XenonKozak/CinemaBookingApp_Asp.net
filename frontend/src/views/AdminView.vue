@@ -354,10 +354,10 @@ onMounted(fetchData);
 }
 
 .admin-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  max-width: 640px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 24px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -400,6 +400,7 @@ onMounted(fetchData);
   min-width: 0;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
 .admin-title {
