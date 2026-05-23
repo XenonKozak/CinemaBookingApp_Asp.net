@@ -32,6 +32,18 @@ Katalog: `/frontend`
 
 Aplikacja stworzona przy użyciu **Vue 3** oraz bundlera **Vite**. Zapewnia błyskawiczne działanie (Single Page Application) i kładzie potężny nacisk na odczucia wizualne użytkownika.
 
+### Galeria Interfejsu (Web)
+<p align="center">
+  <img src="docs/images/home.png" alt="Ekran Główny i Repertuar" width="800"/>
+  <br/><em>Ekran główny i nowoczesny repertuar z efektem Glassmorphism</em><br/><br/>
+  
+  <img src="docs/images/seat-picker.png" alt="Seat Picker" width="800"/>
+  <br/><em>Interaktywny widok wyboru miejsc w sali kinowej</em><br/><br/>
+  
+  <img src="docs/images/success.png" alt="Ekran Sukcesu" width="800"/>
+  <br/><em>Dedykowany widok potwierdzenia zakupu biletów</em>
+</p>
+
 ### Najważniejsze cechy:
 - **Premium UX/UI**: Zaawansowany system projektowania z mocno zaokrąglonymi kształtami, pływającymi etykietami formularzy (Floating Labels znane z Material Design), płynnymi animacjami przejść oraz responsywnością.
 - **Routing**: Obsługa spójnej nawigacji (Strona główna, Logowanie, Rejestracja, Panel Admina, Szczegóły Seansu, Moje Bilety, Dedykowany ekran Sukcesu Rezerwacji) poprzez `vue-router`.
