@@ -46,7 +46,26 @@ export default function MyReservationsScreen({ navigation }) {
     setError('');
     try {
       const res = await api.get('/Reservation/my');
-      setReservations(res.data);
+      
+      const grouped = {};
+      for (const item of res.data) {
+        if (!grouped[item.bookingId]) {
+          grouped[item.bookingId] = {
+            bookingId: item.bookingId,
+            movieId: item.movieId,
+            movieTitle: item.movieTitle,
+            imageUrl: item.imageUrl,
+            reservationDate: item.reservationDate,
+            seats: []
+          };
+        }
+        grouped[item.bookingId].seats.push({
+          row: item.row,
+          seatNumber: item.seatNumber
+        });
+      }
+      const sorted = Object.values(grouped).sort((a, b) => new Date(b.reservationDate) - new Date(a.reservationDate));
+      setReservations(sorted);
     } catch {
       setError('Nie udało się pobrać Twoich rezerwacji.');
     } finally {
@@ -54,21 +73,21 @@ export default function MyReservationsScreen({ navigation }) {
     }
   };
 
-  const handleCancel = (id) => {
+  const handleCancel = (bookingId) => {
     Alert.alert(
-      'Anuluj bilet',
-      'Czy na pewno chcesz anulować ten bilet? Ta operacja jest nieodwracalna.',
+      'Anuluj rezerwację',
+      'Czy na pewno chcesz anulować całą rezerwację? Ta operacja jest nieodwracalna.',
       [
         { text: 'Nie', style: 'cancel' },
-        { text: 'Tak', style: 'destructive', onPress: () => cancelReservation(id) },
+        { text: 'Tak', style: 'destructive', onPress: () => cancelReservation(bookingId) },
       ]
     );
   };
 
-  const cancelReservation = async (id) => {
+  const cancelReservation = async (bookingId) => {
     try {
-      await api.delete(`/Reservation/${id}`);
-      setReservations(prev => prev.filter(r => r.id !== id));
+      await api.delete(`/Reservation/${bookingId}`);
+      setReservations(prev => prev.filter(r => r.bookingId !== bookingId));
     } catch {
       Alert.alert('Błąd', 'Nie udało się anulować rezerwacji.');
     }
@@ -94,9 +113,9 @@ export default function MyReservationsScreen({ navigation }) {
 
       <View style={styles.metaRow}>
         <View style={styles.metaBadgeSpacer}>
-          <Badge variant="gold">Rząd {item.row}</Badge>
+          <Badge variant="gold">{item.seats.length} {item.seats.length === 1 ? 'miejsce' : 'miejsca'}</Badge>
         </View>
-        <Badge variant="purple">Miejsce {item.seatNumber}</Badge>
+        <Badge variant="purple">{item.seats.map(s => `${s.row}${s.seatNumber}`).join(', ')}</Badge>
       </View>
 
       <View style={styles.dateRow}>
@@ -113,8 +132,8 @@ export default function MyReservationsScreen({ navigation }) {
         </TouchableOpacity>
         <TouchableOpacity 
           style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: theme.radius.sm, borderColor: 'rgba(239, 68, 68, 0.4)', borderWidth: 1 }} 
-          onPress={() => handleCancel(item.id)}>
-          <Text style={{ color: theme.colors.danger, fontSize: 13, fontWeight: '600' }}>Anuluj</Text>
+          onPress={() => handleCancel(item.bookingId)}>
+          <Text style={{ color: theme.colors.danger, fontSize: 13, fontWeight: '600' }}>Odwołaj całość</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -143,7 +162,7 @@ export default function MyReservationsScreen({ navigation }) {
       ) : (
         <FlatList
           data={reservations}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.bookingId}
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
