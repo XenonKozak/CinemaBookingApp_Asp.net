@@ -18,11 +18,12 @@
           </router-link>
 
           <div class="nav-user">
-            <div class="nav-avatar">{{ userInitials }}</div>
+            <div class="nav-avatar" :class="{'admin-avatar': auth.isAdmin}">{{ userInitials }}</div>
             <div class="nav-user-info">
               <span class="nav-user-name">{{ auth.user?.userName }}</span>
-              <span v-if="auth.isAdmin" class="badge badge-gold">Admin</span>
-              <span v-else class="badge badge-purple">User</span>
+              <span class="nav-user-role" :class="{'text-gold': auth.isAdmin, 'text-purple': !auth.isAdmin}">
+                {{ auth.isAdmin ? 'Administrator' : 'Użytkownik' }}
+              </span>
             </div>
           </div>
 
@@ -48,11 +49,12 @@
         <router-link v-if="auth.isAdmin" to="/admin" class="nav-link">Panel Admina</router-link>
         <router-link to="/my-reservations" class="nav-link">Moje Rezerwacje</router-link>
         <div class="nav-user-mobile" @click.stop>
-          <div class="nav-avatar">{{ userInitials }}</div>
+          <div class="nav-avatar" :class="{'admin-avatar': auth.isAdmin}">{{ userInitials }}</div>
           <div class="nav-user-info">
             <span class="nav-user-name">{{ auth.user?.userName }}</span>
-            <span v-if="auth.isAdmin" class="badge badge-purple">Admin</span>
-            <span v-else class="badge badge-purple">User</span>
+            <span class="nav-user-role" :class="{'text-gold': auth.isAdmin, 'text-purple': !auth.isAdmin}">
+              {{ auth.isAdmin ? 'Administrator' : 'Użytkownik' }}
+            </span>
           </div>
         </div>
         <button @click="handleLogout" class="nav-link btn-logout" style="text-align:left; width:100%;">Wyloguj</button>
@@ -207,12 +209,32 @@ function handleLogout() {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  justify-content: center;
 }
 
 .nav-user-name {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.nav-user-role {
+  font-size: 0.75rem;
   font-weight: 500;
-  color: var(--text-secondary);
+}
+
+.text-gold {
+  color: rgba(212, 168, 67, 0.8);
+}
+
+.text-purple {
+  color: var(--accent-purple-light);
+}
+
+.admin-avatar {
+  border-color: rgba(212, 168, 67, 0.5);
+  box-shadow: 0 0 12px rgba(212, 168, 67, 0.15);
 }
 
 .navbar-toggle {
