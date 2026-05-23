@@ -82,23 +82,26 @@ export default function ScreeningScreen({ route, navigation }) {
     const booked = [];
     let hadError = false;
 
-    for (const seat of selectedSeats) {
-      try {
-        await api.post('/Reservation', {
-          seatNumber: seat.seat,
-          row: seat.row,
-          reservationDate,
-          screeningId: id,
-        });
-        booked.push(seat);
-      } catch (e) {
-        hadError = true;
-        if (e.response?.status === 401) {
-          showToast('error', 'Musisz być zalogowany, aby dokonać rezerwacji.');
-          navigation.replace('Login');
-          setReserving(false);
-          return;
-        }
+    try {
+      const seatsPayload = selectedSeats.map(seat => ({
+        seatNumber: seat.seat,
+        row: seat.row
+      }));
+
+      await api.post('/Reservation', {
+        seats: seatsPayload,
+        reservationDate,
+        screeningId: id,
+      });
+
+      booked.push(...selectedSeats);
+    } catch (e) {
+      hadError = true;
+      if (e.response?.status === 401) {
+        showToast('error', 'Musisz być zalogowany, aby dokonać rezerwacji.');
+        navigation.replace('Login');
+        setReserving(false);
+        return;
       }
     }
 
