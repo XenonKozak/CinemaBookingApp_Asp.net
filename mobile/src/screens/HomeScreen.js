@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Image,
+  Pressable,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../api/axios';
@@ -87,25 +88,25 @@ export default function HomeScreen({ navigation }) {
     );
 
     return (
-      <View style={styles.card}>
-        <View style={styles.cardTop}>
+      <Pressable style={({ pressed }) => [styles.card, { padding: 0, overflow: 'hidden', transform: [{ scale: pressed ? 0.985 : 1 }] }]}>
+        <View style={styles.cardHeader}>
           {item.imageUrl ? (
-            <Image source={{ uri: item.imageUrl }} style={styles.poster} />
+            <Image source={{ uri: item.imageUrl }} style={styles.posterFull} resizeMode="cover" />
           ) : (
-            <View style={styles.posterPlaceholder}>
+            <View style={styles.posterPlaceholderFull}>
               <Text style={styles.posterIcon}>🎞️</Text>
             </View>
           )}
-          <View style={styles.cardInfo}>
-            <Text style={styles.title}>{item.title}</Text>
-            <View style={styles.durationBadge}>
-              <Text style={styles.durationText}>{item.duration} min</Text>
-            </View>
+          <View style={styles.durationBadgeOverlay}>
+            <Text style={styles.durationTextOverlay}>⏱ {item.duration} min</Text>
           </View>
         </View>
-        <Text style={styles.desc} numberOfLines={3}>{item.description}</Text>
-        
-        <View style={styles.screeningsSection}>
+
+        <View style={styles.cardContent}>
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.desc} numberOfLines={3}>{item.description}</Text>
+          
+          <View style={styles.screeningsSection}>
           <View style={styles.timesRow}>
             {sortedScreenings.map((s) => (
               <TouchableOpacity
@@ -122,6 +123,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
       </View>
+    </Pressable>
     );
   };
 
@@ -244,54 +246,49 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  cardTop: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  poster: {
-    width: 60,
-    height: 90,
-    borderRadius: theme.radius.sm,
+  cardHeader: {
+    width: '100%',
+    height: 300,
     backgroundColor: theme.colors.bgInput,
+    position: 'relative',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
-  posterPlaceholder: {
-    width: 60,
-    height: 90,
-    borderRadius: theme.radius.sm,
-    backgroundColor: theme.colors.bgInput,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+  posterFull: {
+    width: '100%',
+    height: '100%',
+  },
+  posterPlaceholderFull: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  posterIcon: {
-    fontSize: 24,
+  durationBadgeOverlay: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: 'rgba(10, 10, 26, 0.85)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-  cardInfo: {
-    flex: 1,
-    marginLeft: 12,
+  durationTextOverlay: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  cardContent: {
+    padding: 16,
   },
   title: {
     color: theme.colors.textPrimary,
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '800',
     marginBottom: 8,
-    lineHeight: 24,
-    flexShrink: 1,
-  },
-  durationBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(226, 172, 85, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(226, 172, 85, 0.3)',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  durationText: {
-    color: theme.colors.accentGold,
-    fontSize: 12,
-    fontWeight: '700',
+    lineHeight: 28,
   },
   desc: {
     color: theme.colors.textSecondary,

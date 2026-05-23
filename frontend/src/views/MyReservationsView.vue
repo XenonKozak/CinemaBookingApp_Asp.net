@@ -30,16 +30,22 @@
               <span class="badge badge-purple">Miejsce {{ res.seatNumber }}</span>
             </div>
             <p class="res-date">
-              📅 {{ formatDate(res.reservationDate) }}
+              <Calendar size="14" style="margin-right: 6px;" />
+              {{ formatDate(res.reservationDate) }}
             </p>
           </div>
-          <div class="res-status" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-            <span class="badge badge-success">Potwierdzona</span>
+          <div class="res-status">
+            <div class="status-indicator">
+              <span class="status-dot"></span>
+              <span>Potwierdzona</span>
+            </div>
             <button 
-              class="btn btn-secondary" 
-              style="padding: 4px 12px; font-size: 0.85rem; border-color: rgba(239, 68, 68, 0.4); color: var(--danger);"
-              @click="cancelReservation(res.id)">
-              Anuluj
+              class="btn-cancel" 
+              @click="cancelReservation(res.id)"
+              title="Zrezygnuj z rezerwacji"
+            >
+              <Trash2 size="14" />
+              Odwołaj
             </button>
           </div>
         </div>
@@ -59,6 +65,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { Calendar, Trash2 } from 'lucide-vue-next';
 import api from '../api/axios.js';
 
 const reservations = ref([]);
@@ -145,12 +152,62 @@ onMounted(fetchMyReservations);
 }
 
 .res-date {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  margin: 0;
 }
 
 .res-status {
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 120px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--success);
+}
+
+.btn-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 640px) {
@@ -163,9 +220,18 @@ onMounted(fetchMyReservations);
   .res-meta {
     justify-content: center;
   }
+
+  .res-date {
+    justify-content: center;
+  }
   
   .res-status {
-    text-align: center;
+    align-items: center;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
   }
 }
 </style>

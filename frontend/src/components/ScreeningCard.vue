@@ -1,37 +1,32 @@
 <template>
   <article class="movie-card glass-card">
-    <div class="card-layout">
-      <div class="card-thumb-wrapper">
-        <img
-          v-if="movie.imageUrl"
-          :src="movie.imageUrl"
-          :alt="`Plakat: ${movie.title}`"
-          class="card-thumb"
-        />
-        <div v-else class="card-thumb-placeholder">
-          <span class="icon">🎞️</span>
-        </div>
-        <div class="duration-badge">{{ movie.duration }} min</div>
+    <div 
+      class="card-header"
+      :style="movie.imageUrl ? `background-image: url(${movie.imageUrl})` : ''"
+    >
+      <div v-if="!movie.imageUrl" class="card-thumb-placeholder">
+        <span class="icon">🎞️</span>
       </div>
+      <div class="duration-badge">⏱ {{ movie.duration }} min</div>
+    </div>
 
-      <div class="card-content">
-        <h3 class="card-title" :title="movie.title">{{ movie.title }}</h3>
-        <p class="card-desc">{{ movie.description }}</p>
+    <div class="card-content">
+      <h3 class="card-title" :title="movie.title">{{ movie.title }}</h3>
+      <p class="card-desc">{{ movie.description }}</p>
 
-        <div class="screenings-section">
-          <div class="times-row">
-            <button
-              v-for="s in sortedScreenings"
-              :key="s.id"
-              type="button"
-              class="time-pill"
-              @click="$emit('select-screening', s.id)"
-            >
-              <span class="time-pill-clock">{{ formatScreeningClock(s.screeningTime) }}</span>
-              <span class="time-pill-dot">·</span>
-              <span class="time-pill-day">{{ formatScreeningDayShort(s.screeningTime) }}</span>
-            </button>
-          </div>
+      <div class="screenings-section">
+        <div class="times-row">
+          <button
+            v-for="s in sortedScreenings"
+            :key="s.id"
+            type="button"
+            class="time-pill"
+            @click="$emit('select-screening', s.id)"
+          >
+            <span class="time-pill-clock">{{ formatScreeningClock(s.screeningTime) }}</span>
+            <span class="time-pill-dot">·</span>
+            <span class="time-pill-day">{{ formatScreeningDayShort(s.screeningTime) }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -66,36 +61,31 @@ const sortedScreenings = computed(() => {
 
 <style scoped>
 .movie-card {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease;
 }
 
 .movie-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  transform: scale(1.01) translateY(-4px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
 }
 
-.card-layout {
-  display: flex;
-  gap: 16px;
-  padding: 16px;
+.movie-card:active {
+  transform: scale(0.99);
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.card-thumb-wrapper {
+.card-header {
   position: relative;
-  width: 92px;
-  min-width: 92px;
-  height: 138px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-input);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.card-thumb {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: 380px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-input);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .card-thumb-placeholder {
@@ -110,29 +100,32 @@ const sortedScreenings = computed(() => {
 
 .duration-badge {
   position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  color: var(--accent-gold);
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  bottom: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(10, 10, 26, 0.85);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .card-content {
   flex: 1;
-  min-width: 0;
+  padding: 20px;
   display: flex;
   flex-direction: column;
 }
 
 .card-title {
   margin: 0 0 6px;
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   font-weight: 800;
   line-height: 1.25;
   color: var(--text-primary);
@@ -207,15 +200,8 @@ const sortedScreenings = computed(() => {
 }
 
 @media (max-width: 480px) {
-  .card-layout {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .card-thumb-wrapper {
-    width: 100%;
-    height: 200px;
-    min-width: unset;
+  .card-header {
+    height: 300px;
   }
 }
 </style>

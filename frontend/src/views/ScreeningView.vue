@@ -99,11 +99,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import api from '../api/axios.js';
 import SeatPicker from '../components/SeatPicker.vue';
 
 const route = useRoute();
+const router = useRouter();
 const screening = ref(null);
 const loading = ref(true);
 const error = ref('');
@@ -157,14 +158,15 @@ async function handleReservation() {
 
   if (booked.length > 0) {
     const labels = booked.map((s) => `${s.row}${s.seat}`).join(', ');
-    showToast(
-      'success',
-      booked.length === 1
-        ? `Zarezerwowano miejsce ${labels}! 🎉`
-        : `Zarezerwowano ${booked.length} miejsca: ${labels} 🎉`
-    );
-    selectedSeats.value = [];
-    await fetchScreening();
+    router.push({
+      name: 'Success',
+      query: {
+        title: screening.value.movieTitle,
+        seats: labels,
+        imageUrl: screening.value.imageUrl || ''
+      }
+    });
+    return;
   }
 
   if (hadError) {
@@ -213,24 +215,25 @@ onMounted(fetchScreening);
 .movie-card {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 14px;
-  margin-bottom: 24px;
+  gap: 32px;
+  padding: 32px;
+  margin-bottom: 40px;
 }
 
 .movie-poster {
-  width: 92px;
-  height: 138px;
+  width: 180px;
+  height: 270px;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: 16px;
   flex-shrink: 0;
   background: var(--bg-input);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .movie-poster-placeholder {
-  width: 92px;
-  height: 138px;
-  border-radius: var(--radius-sm);
+  width: 180px;
+  height: 270px;
+  border-radius: 16px;
   background: var(--bg-input);
   border: 1px solid var(--border);
   display: flex;
@@ -243,31 +246,33 @@ onMounted(fetchScreening);
 .movie-info {
   flex: 1;
   min-width: 0;
+  padding-top: 12px;
 }
 
 .movie-title {
-  font-size: 1.25rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  margin: 0 0 10px;
-  line-height: 1.25;
+  margin: 0 0 16px;
+  line-height: 1.2;
 }
 
 .movie-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.movie-meta .badge {
+  font-size: 1rem;
+  padding: 6px 14px;
 }
 
 .movie-desc-preview {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   color: var(--text-secondary);
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.6;
 }
 
 .hall-section {

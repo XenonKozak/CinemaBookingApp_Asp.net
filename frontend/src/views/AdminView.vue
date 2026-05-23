@@ -1,9 +1,12 @@
 <template>
   <div class="page fade-in">
     <div class="container">
-      <div class="page-header">
-        <h1>⚙️ Panel <span class="text-gradient">Administratora</span></h1>
-        <p>Zarządzaj filmami i seansami</p>
+      <div class="page-header" style="display:flex;align-items:center;gap:16px;">
+        <Settings size="40" color="var(--text-secondary)" />
+        <div>
+          <h1>Panel <span class="text-gradient">Administratora</span></h1>
+          <p>Zarządzaj filmami i seansami</p>
+        </div>
       </div>
 
       <div class="admin-tabs">
@@ -26,7 +29,7 @@
           <article v-for="m in movies" :key="m.id" class="admin-card glass-card">
             <div class="admin-card-top">
               <img v-if="m.imageUrl" :src="m.imageUrl" alt="" class="admin-thumb" />
-              <div v-else class="admin-thumb-placeholder">🎞️</div>
+              <div v-else class="admin-thumb-placeholder"><Film size="24" color="var(--text-muted)" /></div>
               <div class="admin-head">
                 <h3 class="admin-title">{{ m.title }}</h3>
                 <span class="badge badge-gold">{{ m.duration }} min</span>
@@ -34,14 +37,14 @@
             </div>
             <p class="admin-desc">{{ m.description }}</p>
             <div class="admin-actions">
-              <button class="btn btn-secondary btn-sm" @click="openMovieEdit(m)">✏️ Edytuj</button>
-              <button class="btn btn-danger btn-sm" @click="confirmMovieDelete(m)">🗑️ Usuń</button>
+              <button class="btn btn-secondary btn-sm" @click="openMovieEdit(m)"><Pencil size="14" style="margin-right:4px; margin-top:-2px;" /> Edytuj</button>
+              <button class="btn btn-danger btn-sm" @click="confirmMovieDelete(m)"><Trash2 size="14" style="margin-right:4px; margin-top:-2px;" /> Usuń</button>
             </div>
           </article>
         </div>
 
         <div v-else class="empty-state">
-          <div class="icon">🎬</div>
+          <div class="icon"><Clapperboard size="48" /></div>
           <p>Brak filmów. Dodaj pierwszy film!</p>
           <button class="btn btn-primary" style="margin-top: 16px" @click="openMovieCreate">
             + Dodaj film
@@ -60,21 +63,30 @@
           <div class="spinner"></div>
         </div>
 
-        <div v-else-if="screenings.length > 0" class="admin-list">
-          <article v-for="s in screenings" :key="s.id" class="admin-card glass-card">
-            <div class="admin-head">
-              <h3 class="admin-title">{{ getMovieTitle(s.movieId) }}</h3>
-              <span class="badge badge-purple">{{ formatTime(s.screeningTime) }}</span>
+        <div v-else-if="moviesWithScreenings.length > 0" class="admin-list">
+          <article v-for="m in moviesWithScreenings" :key="m.id" class="admin-card glass-card">
+            <div class="admin-card-top">
+              <img v-if="m.imageUrl" :src="m.imageUrl" alt="" class="admin-thumb" />
+              <div v-else class="admin-thumb-placeholder">🎞️</div>
+              <div class="admin-head">
+                <h3 class="admin-title">{{ m.title }}</h3>
+                <span class="admin-desc" style="display:block; margin:0">{{ m.movieScreenings.length }} seansów</span>
+              </div>
             </div>
-            <div class="admin-actions">
-              <button class="btn btn-secondary btn-sm" @click="openScreeningEdit(s)">✏️ Edytuj</button>
-              <button class="btn btn-danger btn-sm" @click="confirmScreeningDelete(s)">🗑️ Usuń</button>
+            <div class="screenings-list">
+              <div v-for="s in m.movieScreenings" :key="s.id" class="screening-row">
+                <span class="badge badge-purple" style="font-weight: 600">{{ formatTime(s.screeningTime) }}</span>
+                <div class="screening-actions">
+                  <button class="icon-btn" @click="openScreeningEdit(s)"><Pencil size="16" /></button>
+                  <button class="icon-btn danger" @click="confirmScreeningDelete(s)"><Trash2 size="16" /></button>
+                </div>
+              </div>
             </div>
           </article>
         </div>
 
         <div v-else class="empty-state">
-          <div class="icon">📅</div>
+          <div class="icon"><Calendar size="48" /></div>
           <p>Brak seansów. Najpierw dodaj film, a potem zaplanuj seans!</p>
           <button class="btn btn-primary" style="margin-top: 16px" @click="openScreeningCreate" :disabled="movies.length === 0">
             + Dodaj seans
@@ -149,17 +161,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import api from '../api/axios.js';
 import AdminMovieForm from '../components/AdminMovieForm.vue';
 import AdminScreeningForm from '../components/AdminScreeningForm.vue';
 import { formatScreeningDateTime, toApiScreeningTime, notifyRepertoireRefresh } from '../utils/screeningTime.js';
+import { Settings, Film, Clapperboard, Pencil, Trash2, Calendar } from 'lucide-vue-next';
 
 const activeTab = ref('movies');
 
 const movies = ref([]);
 const screenings = ref([]);
 const loading = ref(true);
+
+const moviesWithScreenings = computed(() => {
+  return movies.value
+    .map(m => ({ ...m, movieScreenings: screenings.value.filter(s => s.movieId === m.id) }))
+    .filter(m => m.movieScreenings.length > 0);
+});
 
 const showMovieForm = ref(false);
 const editingMovie = ref(null);
@@ -308,10 +327,11 @@ onMounted(fetchData);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   padding: 10px 20px;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
+  flex: 1;
 }
 .tab-btn:hover { background: rgba(255, 255, 255, 0.1); }
 .tab-btn.active { background: var(--accent-gold); color: #000; border-color: var(--accent-gold); }
@@ -342,66 +362,70 @@ onMounted(fetchData);
 }
 
 .admin-card {
-  padding: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-card-top {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 20px;
+  margin-bottom: 0;
 }
 
 .admin-thumb {
-  width: 48px;
-  height: 68px;
+  width: 140px;
+  height: 210px;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   flex-shrink: 0;
   background: var(--bg-input);
 }
 
 .admin-thumb-placeholder {
-  width: 48px;
-  height: 68px;
-  border-radius: var(--radius-sm);
+  width: 140px;
+  height: 210px;
+  border-radius: 12px;
   background: var(--bg-input);
   border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
   flex-shrink: 0;
 }
 
 .admin-head {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-title {
-  margin: 0 0 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.25;
+  margin: 0 0 12px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .admin-desc {
-  margin: 0 0 12px;
-  font-size: 0.85rem;
+  margin: 16px 0 20px;
+  font-size: 0.95rem;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.6;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .admin-actions {
   display: flex;
-  gap: 8px;
-  padding-top: 12px;
+  gap: 12px;
+  padding-top: 20px;
   border-top: 1px solid var(--border);
+  margin-top: auto;
 }
 
 .modal-text {
@@ -426,4 +450,37 @@ onMounted(fetchData);
   gap: 12px;
   justify-content: flex-end;
 }
+
+.screenings-list {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.screening-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-input);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+}
+.screening-actions {
+  display: flex;
+  gap: 12px;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.icon-btn:hover { opacity: 1; }
+.icon-btn.danger { color: var(--danger); }
 </style>

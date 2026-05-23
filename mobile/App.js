@@ -65,7 +65,7 @@ const MyTheme = {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: theme.colors.bgPrimary }}>
       <AuthProvider>
         <StatusBar style="light" />
         <NavigationContainer theme={MyTheme}>

@@ -9,6 +9,8 @@ export function parseScreeningTime(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+const shortMonths = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
+
 export function formatScreeningDayShort(value) {
   const d = parseScreeningTime(value);
   if (!d) return '';
@@ -19,7 +21,7 @@ export function formatScreeningDayShort(value) {
   const diffDays = Math.round((slot - today) / 86400000);
   if (diffDays === 0) return 'dziś';
   if (diffDays === 1) return 'jutro';
-  return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+  return `${d.getDate()} ${shortMonths[d.getMonth()]}`;
 }
 
 export function getMovieScreenings(movie) {
@@ -47,25 +49,22 @@ export function buildRepertoire(movies, screenings) {
 export function formatScreeningDate(value) {
   const d = parseScreeningTime(value);
   if (!d) return '';
-  return d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}`;
 }
 
 export function formatScreeningDateTime(value) {
   const d = parseScreeningTime(value);
   if (!d) return '—';
-  return d.toLocaleString('pl-PL', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function formatScreeningClock(value) {
   const d = parseScreeningTime(value);
   if (!d) return '—';
-  return d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function toApiScreeningTime(input) {

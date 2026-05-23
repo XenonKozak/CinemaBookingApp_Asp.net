@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../theme/theme';
 import Badge from './Badge';
+import { Feather } from '@expo/vector-icons';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -17,6 +18,19 @@ function getInitials(name) {
 export default function NavBar({ navigation }) {
   const auth = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const animation = useRef(new Animated.Value(0)).current;
+
+  const toggleMenu = () => {
+    const nextState = !mobileOpen;
+    if (nextState) setMobileOpen(true);
+    Animated.timing(animation, {
+      toValue: nextState ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      if (!nextState) setMobileOpen(false);
+    });
+  };
 
   const handleLogout = async () => {
     await auth.logout();
@@ -25,8 +39,10 @@ export default function NavBar({ navigation }) {
   };
 
   const go = (screen) => {
-    setMobileOpen(false);
-    navigation.navigate(screen);
+    Animated.timing(animation, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setMobileOpen(false);
+      navigation.navigate(screen);
+    });
   };
 
   const NavLink = ({ label, onPress, gold, active }) => (
@@ -43,17 +59,17 @@ export default function NavBar({ navigation }) {
   const userName = auth.user?.userName || '';
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <View style={styles.navbar}>
+    <SafeAreaView edges={['top']} style={[styles.safe, { zIndex: 1000, elevation: 1000 }]}>
+      <View style={[styles.navbar, { zIndex: 100, elevation: 100 }]}>
         <View style={styles.inner}>
           <TouchableOpacity onPress={() => go('Home')} style={styles.brand}>
-            <Text style={styles.brandIcon}>🎬</Text>
+            <Feather name="film" size={20} color={theme.colors.accentGoldLight} style={{ marginRight: 8 }} />
             <Text style={styles.brandText}>CinemaBook</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.toggle}
-            onPress={() => setMobileOpen((v) => !v)}
+            onPress={toggleMenu}
             accessibilityLabel="Menu"
           >
             <View style={styles.toggleBar} />
@@ -62,7 +78,27 @@ export default function NavBar({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {mobileOpen && (
+        <Animated.View 
+          pointerEvents={mobileOpen ? 'auto' : 'none'}
+          style={{ 
+            position: 'absolute',
+            top: 56,
+            left: 0,
+            right: 0,
+            backgroundColor: theme.colors.bgSecondary,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.border,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.5,
+            shadowRadius: 15,
+            elevation: 20,
+            opacity: animation,
+            transform: [{
+              translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] })
+            }],
+            zIndex: 50,
+        }}>
           <View style={styles.mobileMenu}>
             <NavLink label="Repertuar" onPress={() => go('Home')} />
 
@@ -84,9 +120,9 @@ export default function NavBar({ navigation }) {
                 </View>
 
                 {auth.isAdmin && (
-                  <NavLink label="⚙️ Panel Admina" gold onPress={() => go('Admin')} />
+                  <NavLink label={<><Feather name="settings" size={16} /> Panel Admina</>} gold onPress={() => go('Admin')} />
                 )}
-                <NavLink label="🎟️ Moje Rezerwacje" onPress={() => go('MyReservations')} />
+                <NavLink label={<><Feather name="bookmark" size={16} /> Moje Rezerwacje</>} onPress={() => go('MyReservations')} />
 
                 <TouchableOpacity style={styles.btnSecondary} onPress={handleLogout}>
                   <Text style={styles.btnSecondaryText}>Wyloguj</Text>
@@ -101,7 +137,7 @@ export default function NavBar({ navigation }) {
               </>
             )}
           </View>
-        )}
+        </Animated.View>
       </View>
     </SafeAreaView>
   );

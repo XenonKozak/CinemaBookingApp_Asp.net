@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Animated,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../api/axios';
@@ -28,6 +29,25 @@ export default function ScreeningScreen({ route, navigation }) {
   const [reserving, setReserving] = useState(false);
   const [toast, setToast] = useState(null);
   const [selectedSeats, setSelectedSeats] = useState([]);
+  
+  const slideAnim = useRef(new Animated.Value(400)).current;
+
+  useEffect(() => {
+    if (selectedSeats.length > 0) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 60,
+        friction: 10,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 400,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [selectedSeats.length > 0]);
 
   useEffect(() => {
     if (!auth.isLoggedIn) {
@@ -190,21 +210,21 @@ export default function ScreeningScreen({ route, navigation }) {
 
       </ScrollView>
 
-      {hasFooter && (
-        <SafeAreaView edges={['bottom']} style={styles.footerSafe}>
+      <Animated.View style={[styles.footerSafe, { transform: [{ translateY: slideAnim }] }]}>
+        <SafeAreaView edges={['bottom']}>
           <View style={styles.footer}>
             <View style={styles.footerInfo}>
               <Text style={styles.footerLabel}>
                 Wybrane miejsca ({selectedSeats.length})
               </Text>
               <Text style={styles.footerSeat} numberOfLines={2}>
-                {seatsLabel}
+                {selectedSeats.length > 0 ? seatsLabel : '-'}
               </Text>
             </View>
             <TouchableOpacity
               style={[styles.footerBtn, reserving && styles.footerBtnDisabled]}
               onPress={handleReservation}
-              disabled={reserving}
+              disabled={reserving || selectedSeats.length === 0}
               activeOpacity={0.85}
             >
               {reserving ? (
@@ -226,7 +246,7 @@ export default function ScreeningScreen({ route, navigation }) {
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      )}
+      </Animated.View>
 
       {toast && (
         <View

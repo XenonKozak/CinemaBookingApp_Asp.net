@@ -12,10 +12,11 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../api/axios';
 import { theme } from '../theme/theme';
-import NavBar from '../components/NavBar';
+import { Feather } from '@expo/vector-icons';
 import AdminMovieForm from '../components/AdminMovieForm';
 import AdminScreeningForm from '../components/AdminScreeningForm';
 import { formatScreeningDateTime, toApiScreeningTime } from '../utils/screeningTime';
+import NavBar from '../components/NavBar';
 
 export default function AdminScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('movies');
@@ -58,6 +59,11 @@ export default function AdminScreen({ navigation }) {
   const getMovieTitle = (id) => {
     const m = movies.find(x => x.id === id);
     return m ? m.title : 'Nieznany film';
+  };
+
+  const getMoviePoster = (id) => {
+    const m = movies.find(x => x.id === id);
+    return m ? m.imageUrl : null;
   };
 
   const formatTime = (dateStr) => formatScreeningDateTime(dateStr);
@@ -163,49 +169,77 @@ export default function AdminScreen({ navigation }) {
         {item.imageUrl ? (
           <Image source={{ uri: item.imageUrl }} style={styles.thumb} />
         ) : (
-          <View style={styles.thumbPlaceholder}><Text>🎞️</Text></View>
+          <View style={styles.thumbPlaceholder}><Feather name="film" size={24} color={theme.colors.textMuted} /></View>
         )}
         <View style={styles.cardInfo}>
           <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.badge}>{item.duration} min</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{item.duration} min</Text>
+          </View>
         </View>
       </View>
       <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
       <View style={styles.actions}>
         <TouchableOpacity style={styles.btnSecondary} onPress={() => { setEditingMovie(item); setMovieFormVisible(true); }}>
-          <Text style={styles.btnSecondaryText}>✏️ Edytuj</Text>
+          <Feather name="edit-2" size={14} color={theme.colors.textPrimary} style={{ marginRight: 6 }} />
+          <Text style={styles.btnSecondaryText}>Edytuj</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.btnDanger} onPress={() => deleteMovie(item)}>
-          <Text style={styles.btnDangerText}>🗑️ Usuń</Text>
+          <Feather name="trash-2" size={14} color={theme.colors.danger} style={{ marginRight: 6 }} />
+          <Text style={styles.btnDangerText}>Usuń</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
-  const renderScreening = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardInfo}>
-        <Text style={styles.title}>{getMovieTitle(item.movieId)}</Text>
-        <Text style={styles.badge}>{formatTime(item.screeningTime)}</Text>
+  const renderScreeningsGroup = ({ item: movie }) => {
+    const movieScreenings = screenings.filter(s => s.movieId === movie.id);
+    if (movieScreenings.length === 0) return null;
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardTop}>
+          {movie.imageUrl ? (
+            <Image source={{ uri: movie.imageUrl }} style={styles.thumb} />
+          ) : (
+            <View style={styles.thumbPlaceholder}><Feather name="film" size={24} color={theme.colors.textMuted} /></View>
+          )}
+          <View style={styles.cardInfo}>
+            <Text style={styles.title}>{movie.title}</Text>
+            <Text style={styles.desc}>{movieScreenings.length} seansów</Text>
+          </View>
+        </View>
+        <View style={styles.screeningsList}>
+          {movieScreenings.map(s => (
+            <View key={s.id} style={styles.screeningRow}>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{formatTime(s.screeningTime)}</Text>
+              </View>
+              <View style={styles.screeningActions}>
+                <TouchableOpacity onPress={() => { setEditingScreening(s); setScreeningFormVisible(true); }}>
+                  <Feather name="edit-2" size={16} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => deleteScreening(s)}>
+                  <Feather name="trash-2" size={16} color={theme.colors.danger} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
       </View>
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.btnSecondary} onPress={() => { setEditingScreening(item); setScreeningFormVisible(true); }}>
-          <Text style={styles.btnSecondaryText}>✏️ Edytuj</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.btnDanger} onPress={() => deleteScreening(item)}>
-          <Text style={styles.btnDangerText}>🗑️ Usuń</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
       <NavBar navigation={navigation} />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>⚙️ Panel <Text style={styles.gradient}>Administratora</Text></Text>
-        <Text style={styles.headerSubtitle}>Zarządzaj filmami i seansami</Text>
+      <View style={[styles.header, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+        <Feather name="settings" size={32} color={theme.colors.textSecondary} />
+        <View>
+          <Text style={styles.headerTitle}>Panel <Text style={styles.gradient}>Administratora</Text></Text>
+          <Text style={styles.headerSubtitle}>Zarządzaj filmami i seansami</Text>
+        </View>
       </View>
 
       <View style={styles.tabs}>
@@ -245,9 +279,9 @@ export default function AdminScreen({ navigation }) {
         />
       ) : (
         <FlatList
-          data={screenings}
+          data={movies.filter(m => screenings.some(s => s.movieId === m.id))}
           keyExtractor={i => i.id}
-          renderItem={renderScreening}
+          renderItem={renderScreeningsGroup}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<View style={styles.centered}><Text style={styles.emptyText}>Brak seansów.</Text></View>}
         />
@@ -281,8 +315,8 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: '800', color: theme.colors.textPrimary },
   gradient: { color: theme.colors.accentGold },
   headerSubtitle: { color: theme.colors.textSecondary, marginTop: 4 },
-  tabs: { flexDirection: 'row', marginHorizontal: theme.spacing.lg, marginBottom: 16 },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: theme.colors.bgGlass, borderWidth: 1, borderColor: theme.colors.border },
+  tabs: { flexDirection: 'row', marginHorizontal: theme.spacing.lg, marginBottom: 16, gap: 12 },
+  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: theme.colors.bgGlass, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 999 },
   tabActive: { backgroundColor: theme.colors.accentGold, borderColor: theme.colors.accentGold },
   tabText: { color: theme.colors.textSecondary, fontWeight: '600' },
   tabTextActive: { color: '#000' },
@@ -296,15 +330,19 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: theme.spacing.lg, paddingBottom: 20 },
   card: { backgroundColor: theme.colors.bgGlass, borderRadius: theme.radius.md, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border },
   cardTop: { flexDirection: 'row', marginBottom: 8 },
-  thumb: { width: 40, height: 60, borderRadius: theme.radius.sm, backgroundColor: theme.colors.bgInput },
-  thumbPlaceholder: { width: 40, height: 60, borderRadius: theme.radius.sm, backgroundColor: theme.colors.bgInput, justifyContent: 'center', alignItems: 'center' },
+  thumb: { width: 80, height: 120, borderRadius: theme.radius.sm, backgroundColor: theme.colors.bgInput },
+  thumbPlaceholder: { width: 80, height: 120, borderRadius: theme.radius.sm, backgroundColor: theme.colors.bgInput, justifyContent: 'center', alignItems: 'center' },
   cardInfo: { flex: 1, marginLeft: 12 },
-  title: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  badge: { alignSelf: 'flex-start', color: theme.colors.accentGold, fontSize: 12, backgroundColor: 'rgba(226,172,85,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' },
+  title: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 6 },
+  badge: { alignSelf: 'flex-start', backgroundColor: 'rgba(226,172,85,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  badgeText: { color: theme.colors.accentGold, fontSize: 13, fontWeight: '600' },
   desc: { color: theme.colors.textSecondary, fontSize: 13, marginBottom: 12 },
   actions: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: 12, gap: 8 },
-  btnSecondary: { backgroundColor: theme.colors.bgInput, paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: theme.colors.border },
-  btnSecondaryText: { color: theme.colors.textPrimary, fontSize: 13 },
-  btnDanger: { backgroundColor: 'rgba(239,68,68,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' },
-  btnDangerText: { color: theme.colors.danger, fontSize: 13 },
+  btnSecondary: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.bgInput, paddingHorizontal: 12, paddingVertical: 10, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: theme.colors.border },
+  btnSecondaryText: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  btnDanger: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.1)', paddingHorizontal: 12, paddingVertical: 10, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' },
+  btnDangerText: { color: theme.colors.danger, fontSize: 14, fontWeight: '600' },
+  screeningsList: { marginTop: 12, borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: 12, gap: 8 },
+  screeningRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.bgInput, padding: 8, borderRadius: theme.radius.sm },
+  screeningActions: { flexDirection: 'row', gap: 16, marginLeft: 12 },
 });

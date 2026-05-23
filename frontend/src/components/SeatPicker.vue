@@ -98,20 +98,22 @@ function toggleSeat(row, seat) {
 .screen-bar {
   width: 100%;
   max-width: 500px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-top: 3px solid var(--accent-gold);
-  background: rgba(212, 168, 67, 0.1);
-  border-radius: 6px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--accent-purple), transparent);
+  margin-bottom: 32px;
+  position: relative;
+  border-radius: 4px;
 }
 
 .screen-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 3px;
-  color: var(--text-muted);
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--text-secondary);
 }
 
 .seats-grid {
@@ -132,9 +134,9 @@ function toggleSeat(row, seat) {
 .row-label {
   width: 22px;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -148,35 +150,43 @@ function toggleSeat(row, seat) {
 .seat {
   width: 34px;
   height: 34px;
-  border: none;
-  border-radius: 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
   font-family: 'Inter', sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .seat-available {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .seat-available:hover:not(:disabled) {
-  background: rgba(124, 58, 237, 0.3);
+  background: var(--accent-purple);
   color: white;
+  border-color: var(--accent-purple);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
 }
 
 .seat-selected {
   background: var(--accent-gold);
-  color: #0a0a1a;
-  box-shadow: 0 0 12px rgba(212, 168, 67, 0.4);
+  color: #000;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .seat-taken {
-  background: rgba(239, 68, 68, 0.25);
-  color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
   cursor: not-allowed;
+  opacity: 0.8;
 }
 
 .legend {

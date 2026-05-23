@@ -6,6 +6,7 @@ import RegisterView from '../views/RegisterView.vue';
 import ScreeningView from '../views/ScreeningView.vue';
 import AdminView from '../views/AdminView.vue';
 import MyReservationsView from '../views/MyReservationsView.vue';
+import SuccessView from '../views/SuccessView.vue';
 
 const routes = [
   {
@@ -39,6 +40,12 @@ const routes = [
     path: '/my-reservations',
     name: 'MyReservations',
     component: MyReservationsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/success',
+    name: 'Success',
+    component: SuccessView,
     meta: { requiresAuth: true },
   },
 ];
