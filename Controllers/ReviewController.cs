@@ -30,19 +30,15 @@ namespace CinemaBookingApp2.Controllers
 
             try
             {
-                // Cenzura wulgaryzmów przed zapisem i analizą AI!
-                if (!string.IsNullOrWhiteSpace(review.Comment))
-                {
-                    review.Comment = CensorProfanity(review.Comment);
-                }
+                string originalComment = review.Comment;
 
-                // AI Sentiment Analysis
-                if (_aiClient != null && !string.IsNullOrWhiteSpace(review.Comment))
+                // AI Sentiment Analysis (analizujemy przed cenzurą, żeby AI zrozumiało emocje ukryte w wulgaryzmach!)
+                if (_aiClient != null && !string.IsNullOrWhiteSpace(originalComment))
                 {
                     try
                     {
                         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1));
-                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(review.Comment, cancellationToken: cts.Token);
+                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(originalComment, cancellationToken: cts.Token);
                         review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString());
                     }
                     catch (Exception)
@@ -53,6 +49,12 @@ namespace CinemaBookingApp2.Controllers
                 else
                 {
                     review.Sentiment = GetSentiment(review.Rating, "Unknown");
+                }
+
+                // Cenzurujemy komentarz dopiero PO analizie sentymentu, a przed zapisem do bazy!
+                if (!string.IsNullOrWhiteSpace(review.Comment))
+                {
+                    review.Comment = CensorProfanity(review.Comment);
                 }
 
                 // Sprawdzamy, czy użytkownik wystawił już recenzję dla tego filmu
@@ -114,19 +116,15 @@ namespace CinemaBookingApp2.Controllers
 
             try
             {
-                // Cenzura wulgaryzmów przed zapisem i analizą AI!
-                if (!string.IsNullOrWhiteSpace(review.Comment))
-                {
-                    review.Comment = CensorProfanity(review.Comment);
-                }
+                string originalComment = review.Comment;
 
-                // AI Sentiment Analysis
-                if (_aiClient != null && !string.IsNullOrWhiteSpace(review.Comment))
+                // AI Sentiment Analysis (analizujemy przed cenzurą, żeby AI zrozumiało emocje ukryte w wulgaryzmach!)
+                if (_aiClient != null && !string.IsNullOrWhiteSpace(originalComment))
                 {
                     try
                     {
                         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1));
-                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(review.Comment, cancellationToken: cts.Token);
+                        DocumentSentiment documentSentiment = await _aiClient.AnalyzeSentimentAsync(originalComment, cancellationToken: cts.Token);
                         review.Sentiment = GetSentiment(review.Rating, documentSentiment.Sentiment.ToString());
                     }
                     catch (Exception)
@@ -137,6 +135,12 @@ namespace CinemaBookingApp2.Controllers
                 else
                 {
                     review.Sentiment = GetSentiment(review.Rating, "Unknown");
+                }
+
+                // Cenzurujemy komentarz dopiero PO analizie sentymentu, a przed zapisem do bazy!
+                if (!string.IsNullOrWhiteSpace(review.Comment))
+                {
+                    review.Comment = CensorProfanity(review.Comment);
                 }
 
                 review.CreatedAt = DateTime.UtcNow; // Aktualizujemy czas, żeby opinia trafiła na górę listy
