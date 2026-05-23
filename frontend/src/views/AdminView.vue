@@ -12,6 +12,7 @@
       <div class="admin-tabs">
         <button class="tab-btn" :class="{ active: activeTab === 'movies' }" @click="activeTab = 'movies'">Filmy</button>
         <button class="tab-btn" :class="{ active: activeTab === 'screenings' }" @click="activeTab = 'screenings'">Seanse</button>
+        <button class="tab-btn" :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'">Logi Aktywności</button>
       </div>
 
       <!-- MOVIES TAB -->
@@ -94,6 +95,45 @@
         </div>
       </div>
 
+      <!-- LOGS TAB -->
+      <div v-if="activeTab === 'logs'" class="tab-content">
+        <div class="admin-toolbar">
+          <span class="admin-count">{{ logs.length }} logów</span>
+        </div>
+
+        <div v-if="loading" class="loading-center">
+          <div class="spinner"></div>
+        </div>
+
+        <div v-else-if="logs.length > 0" class="logs-container">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Akcja</th>
+                <th>Użytkownik</th>
+                <th>Szczegóły</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(log, idx) in logs" :key="idx">
+                <td>{{ new Date(log.timestamp).toLocaleString('pl-PL') }}</td>
+                <td>
+                  <span class="badge" :class="getLogBadgeClass(log.partitionKey)">{{ log.partitionKey }}</span>
+                </td>
+                <td>{{ log.userName }}</td>
+                <td>{{ log.actionDetails }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-else class="empty-state">
+          <div class="icon"><Activity size="48" /></div>
+          <p>Brak zarejestrowanych aktywności w systemie.</p>
+        </div>
+      </div>
+
       <!-- MODALS -->
       <AdminMovieForm
         v-if="showMovieForm"
@@ -166,12 +206,13 @@ import api from '../api/axios.js';
 import AdminMovieForm from '../components/AdminMovieForm.vue';
 import AdminScreeningForm from '../components/AdminScreeningForm.vue';
 import { formatScreeningDateTime, toApiScreeningTime, notifyRepertoireRefresh } from '../utils/screeningTime.js';
-import { Settings, Film, Clapperboard, Pencil, Trash2, Calendar } from 'lucide-vue-next';
+import { Settings, Film, Clapperboard, Pencil, Trash2, Calendar, Activity } from 'lucide-vue-next';
 
 const activeTab = ref('movies');
 
 const movies = ref([]);
 const screenings = ref([]);
+const logs = ref([]);
 const loading = ref(true);
 
 const moviesWithScreenings = computed(() => {
@@ -197,12 +238,14 @@ const toast = ref(null);
 async function fetchData() {
   loading.value = true;
   try {
-    const [moviesRes, screeningsRes] = await Promise.all([
+    const [moviesRes, screeningsRes, logsRes] = await Promise.all([
       api.get('/Movie'),
-      api.get('/Screening')
+      api.get('/Screening'),
+      api.get('/Auth/Logs').catch(() => ({ data: [] }))
     ]);
     movies.value = moviesRes.data;
     screenings.value = screeningsRes.data;
+    logs.value = logsRes.data;
   } catch {
     showToast('error', 'Nie udało się pobrać danych.');
   } finally {
@@ -217,6 +260,12 @@ function getMovieTitle(id) {
 
 function formatTime(dateStr) {
   return formatScreeningDateTime(dateStr);
+}
+
+function getLogBadgeClass(actionType) {
+  if (actionType.includes('Success') || actionType.includes('Register')) return 'badge-gold';
+  if (actionType.includes('Failed') || actionType.includes('Error')) return 'badge-danger';
+  return 'badge-secondary';
 }
 
 // Movies
@@ -497,4 +546,53 @@ onMounted(fetchData);
 }
 .icon-btn:hover { opacity: 1; }
 .icon-btn.danger { color: var(--danger); }
+
+/* Logs Table */
+.logs-container {
+  background: var(--bg-glass);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.logs-table th {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 16px 24px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.logs-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.logs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.logs-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.badge-danger {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+.badge-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
 </style>

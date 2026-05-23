@@ -119,5 +119,9 @@ namespace CinemaBookingApp2.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public async Task<IEnumerable<ActivityLogEntity>> GetActivityLogsAsync()
+        {
+            return await _tableStorageService.GetLogsAsync();
+        }
     }
 }

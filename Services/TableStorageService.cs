@@ -50,5 +50,28 @@ namespace CinemaBookingApp2.Services
                 _logger.LogError(ex, "Wystąpił błąd podczas zapisywania logu do Azure Table Storage.");
             }
         }
+        
+        public async Task<System.Collections.Generic.IEnumerable<ActivityLogEntity>> GetLogsAsync()
+        {
+            var logs = new System.Collections.Generic.List<ActivityLogEntity>();
+            if (_tableClient == null) return logs;
+
+            try
+            {
+                var queryResults = _tableClient.QueryAsync<ActivityLogEntity>();
+                await foreach (var entity in queryResults)
+                {
+                    logs.Add(entity);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Wystąpił błąd podczas pobierania logów z Azure Table Storage.");
+            }
+            
+            // Sortowanie po dacie malejąco
+            logs.Sort((a, b) => (b.Timestamp ?? DateTimeOffset.MinValue).CompareTo(a.Timestamp ?? DateTimeOffset.MinValue));
+            return logs;
+        }
     }
 }

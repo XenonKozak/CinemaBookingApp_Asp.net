@@ -68,5 +68,12 @@ namespace CinemaBookingApp2.Controllers
             return Ok(user);
         }
 
+        [Authorize(Roles ="Admin")]
+        [HttpGet("Logs")]
+        public async Task<ActionResult<IEnumerable<ActivityLogEntity>>> GetLogs()
+        {
+            var logs = await _authService.GetActivityLogsAsync();
+            return Ok(logs);
+        }
     }
 }
