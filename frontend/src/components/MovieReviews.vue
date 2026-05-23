@@ -18,55 +18,118 @@
           Jeszcze nikt nie ocenił tego filmu. Bądź pierwszy!
         </div>
         <div v-for="review in sortedReviews" :key="review.id" class="review-card glass-card">
-          <div class="review-header">
-            <div class="review-author-group">
-              <span class="review-author">{{ review.userId }}</span>
-              <span v-if="review.sentiment && review.sentiment !== 'Unknown'" :class="['sentiment-badge', review.sentiment.toLowerCase()]">
-                {{ translateSentiment(review.sentiment) }}
+          <!-- TRYB EDYCJI INLINE -->
+          <div v-if="editingReviewId === review.id" class="edit-review-inline">
+            <div class="review-header">
+              <span class="review-author">{{ review.userId }} <span class="editing-tag">(Edycja)</span></span>
+              <span class="review-date">Teraz</span>
+            </div>
+            
+            <div class="rating-selector inline-rating">
+              <label>Ocena:</label>
+              <div class="stars-input">
+                <span 
+                  v-for="n in 5" 
+                  :key="n" 
+                  class="star-btn" 
+                  :class="{ active: n <= editingReview.rating }"
+                  @click="editingReview.rating = n"
+                >
+                  ★
+                </span>
+              </div>
+            </div>
+            
+            <div class="form-group inline-textarea">
+              <textarea 
+                v-model="editingReview.comment" 
+                rows="2" 
+                required
+                class="form-input"
+              ></textarea>
+            </div>
+            
+            <div class="edit-actions">
+              <button @click="saveEdit(review)" class="btn btn-primary btn-sm" :disabled="savingEdit">
+                {{ savingEdit ? 'Zapisywanie...' : 'Zapisz' }}
+              </button>
+              <button @click="cancelEdit" class="btn btn-secondary btn-sm" :disabled="savingEdit">
+                Anuluj
+              </button>
+            </div>
+          </div>
+
+          <!-- TRYB WYŚWIETLANIA -->
+          <div v-else>
+            <div class="review-header">
+              <div class="review-author-group">
+                <span class="review-author">{{ review.userId }}</span>
+                <span v-if="review.sentiment && review.sentiment !== 'Unknown'" :class="['sentiment-badge', review.sentiment.toLowerCase()]">
+                  {{ translateSentiment(review.sentiment) }}
+                </span>
+              </div>
+              <span class="review-date">{{ formatDate(review.createdAt) }}</span>
+            </div>
+            <div class="review-stars">
+              <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= review.rating }">
+                ★
               </span>
             </div>
-            <span class="review-date">{{ formatDate(review.createdAt) }}</span>
+            <p class="review-comment">{{ review.comment }}</p>
+            
+            <!-- Przyciski akcji dla właściciela opinii -->
+            <div v-if="auth.isLoggedIn && review.userId === auth.user?.userName" class="review-actions">
+              <button @click="startEdit(review)" class="action-btn edit-btn">
+                ✏️ Edytuj
+              </button>
+              <button @click="deleteReview(review)" class="action-btn delete-btn">
+                🗑️ Usuń
+              </button>
+            </div>
           </div>
-          <div class="review-stars">
-            <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= review.rating }">
-              ★
-            </span>
-          </div>
-          <p class="review-comment">{{ review.comment }}</p>
         </div>
       </div>
 
       <!-- Formularz dodawania nowej opinii -->
       <div v-if="auth.isLoggedIn" class="add-review-section glass-card">
-        <h3>Dodaj swoją recenzję</h3>
-        <form @submit.prevent="submitReview" class="review-form">
-          <div class="rating-selector">
-            <label>Ocena:</label>
-            <div class="stars-input">
-              <span 
-                v-for="n in 5" 
-                :key="n" 
-                class="star-btn" 
-                :class="{ active: n <= newReview.rating }"
-                @click="newReview.rating = n"
-              >
-                ★
-              </span>
+        <div v-if="hasExistingReview" class="already-reviewed-message">
+          <div class="info-icon">📝</div>
+          <div class="info-content">
+            <h4>Dodałeś już opinię do tego filmu</h4>
+            <p>Możesz ją zaktualizować lub usunąć za pomocą przycisków "Edytuj" / "Usuń" na swojej opinii powyżej.</p>
+          </div>
+        </div>
+        <div v-else>
+          <h3>Dodaj swoją recenzję</h3>
+          <form @submit.prevent="submitReview" class="review-form">
+            <div class="rating-selector">
+              <label>Ocena:</label>
+              <div class="stars-input">
+                <span 
+                  v-for="n in 5" 
+                  :key="n" 
+                  class="star-btn" 
+                  :class="{ active: n <= newReview.rating }"
+                  @click="newReview.rating = n"
+                >
+                  ★
+                </span>
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <textarea 
-              v-model="newReview.comment" 
-              placeholder="Co sądzisz o tym filmie?" 
-              rows="3" 
-              required
-              class="form-input"
-            ></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary" :disabled="submitting">
-            {{ submitting ? 'Wysyłanie...' : 'Dodaj recenzję' }}
-          </button>
-        </form>
+            <div class="form-group">
+              <textarea 
+                v-model="newReview.comment" 
+                placeholder="Co sądzisz o tym filmie?" 
+                rows="3" 
+                required
+                class="form-input"
+              ></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" :disabled="submitting">
+              {{ submitting ? 'Wysyłanie...' : 'Dodaj recenzję' }}
+            </button>
+          </form>
+        </div>
       </div>
       <div v-else class="login-prompt">
         <p>Musisz być zalogowany, aby dodać recenzję.</p>
@@ -103,6 +166,73 @@ const newReview = ref({
 const sortedReviews = computed(() => {
   return [...reviews.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 });
+
+const hasExistingReview = computed(() => {
+  if (!auth.isLoggedIn || !auth.user?.userName) return false;
+  return reviews.value.some(r => r.userId === auth.user?.userName);
+});
+
+// Tryb edycji recenzji
+const editingReviewId = ref(null);
+const editingReview = ref({
+  rating: 5,
+  comment: ''
+});
+const savingEdit = ref(false);
+
+const startEdit = (review) => {
+  editingReviewId.value = review.id;
+  editingReview.value = {
+    rating: review.rating,
+    comment: review.comment
+  };
+};
+
+const cancelEdit = () => {
+  editingReviewId.value = null;
+  editingReview.value = { rating: 5, comment: '' };
+};
+
+const saveEdit = async (originalReview) => {
+  if (!editingReview.value.comment.trim()) return;
+  savingEdit.value = true;
+  try {
+    const updatedData = {
+      ...originalReview,
+      rating: editingReview.value.rating,
+      comment: editingReview.value.comment.trim()
+    };
+    const res = await api.put(`/Review/${originalReview.id}`, updatedData);
+    
+    // Zastąp opinię w liście nowymi danymi
+    const index = reviews.value.findIndex(r => r.id === originalReview.id);
+    if (index !== -1) {
+      reviews.value[index] = res.data;
+    }
+    cancelEdit();
+  } catch (err) {
+    console.error(err);
+    alert('Wystąpił błąd podczas edycji recenzji.');
+  } finally {
+    savingEdit.value = false;
+  }
+};
+
+const deleteReview = async (review) => {
+  if (!confirm('Czy na pewno chcesz usunąć swoją recenzję?')) return;
+  try {
+    await api.delete(`/Review/${review.id}`, {
+      params: {
+        movieId: review.movieId
+      }
+    });
+    // Usuń z lokalnej listy
+    reviews.value = reviews.value.filter(r => r.id !== review.id);
+  } catch (err) {
+    console.error(err);
+    alert('Wystąpił błąd podczas usuwania recenzji.');
+  }
+};
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -325,5 +455,102 @@ onMounted(() => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Nowe style dla akcji i edycji recenzji */
+.review-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.85;
+}
+
+.edit-btn {
+  color: var(--accent-gold-light);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.delete-btn {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Formularz edycji inline */
+.edit-review-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editing-tag {
+  font-size: 0.8rem;
+  color: var(--accent-gold);
+  font-weight: normal;
+}
+
+.inline-rating {
+  margin-bottom: 0;
+}
+
+.inline-textarea {
+  margin-bottom: 0;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-sm {
+  padding: 6px 16px;
+  font-size: 0.85rem;
+}
+
+/* Komunikat o istniejącej recenzji */
+.already-reviewed-message {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px;
+  background: rgba(251, 191, 36, 0.05);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: var(--radius-md);
+}
+
+.info-icon {
+  font-size: 1.8rem;
+}
+
+.info-content h4 {
+  margin: 0 0 6px 0;
+  color: var(--accent-gold-light);
+  font-size: 1.05rem;
+}
+
+.info-content p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 </style>

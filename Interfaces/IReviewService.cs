@@ -8,5 +8,8 @@ namespace CinemaBookingApp2.Interfaces
     {
         Task AddReviewAsync(Review review);
         Task<IEnumerable<Review>> GetReviewsForMovieAsync(string movieId);
+        Task<Review> GetUserReviewForMovieAsync(string movieId, string userId);
+        Task UpdateReviewAsync(Review review);
+        Task DeleteReviewAsync(string id, string movieId);
     }
 }

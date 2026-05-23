@@ -36,5 +36,33 @@ namespace CinemaBookingApp2.Services
 
             return results;
         }
+
+        public async Task<Review> GetUserReviewForMovieAsync(string movieId, string userId)
+        {
+            var query = this._container.GetItemQueryIterator<Review>(new QueryDefinition(
+                "SELECT * FROM c WHERE c.movieId = @movieId AND c.userId = @userId")
+                .WithParameter("@movieId", movieId)
+                .WithParameter("@userId", userId));
+
+            while (query.HasMoreResults)
+            {
+                var response = await query.ReadNextAsync();
+                foreach (var item in response)
+                {
+                    return item;
+                }
+            }
+            return null;
+        }
+
+        public async Task UpdateReviewAsync(Review review)
+        {
+            await this._container.ReplaceItemAsync<Review>(review, review.Id, new PartitionKey(review.MovieId));
+        }
+
+        public async Task DeleteReviewAsync(string id, string movieId)
+        {
+            await this._container.DeleteItemAsync<Review>(id, new PartitionKey(movieId));
+        }
     }
 }

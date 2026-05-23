@@ -14,6 +14,14 @@ export default function MovieReviews({ movieId }) {
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Zmienne stanu edycji recenzji
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [editingRating, setEditingRating] = useState(5);
+  const [editingComment, setEditingComment] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const hasExistingReview = auth.isLoggedIn && auth.user?.userName && reviews.some(r => r.userId === auth.user?.userName);
+
   useEffect(() => {
     fetchReviews();
   }, [movieId]);
@@ -59,19 +67,88 @@ export default function MovieReviews({ movieId }) {
     }
   };
 
+  const handleEditStart = (review) => {
+    setEditingReviewId(review.id);
+    setEditingRating(review.rating);
+    setEditingComment(review.comment);
+  };
+
+  const handleEditCancel = () => {
+    setEditingReviewId(null);
+    setEditingRating(5);
+    setEditingComment('');
+  };
+
+  const handleEditSave = async (originalReview) => {
+    if (!editingComment.trim()) return;
+    setSavingEdit(true);
+    try {
+      const updatedData = {
+        ...originalReview,
+        rating: editingRating,
+        comment: editingComment.trim()
+      };
+      
+      const res = await api.put(`/Review/${originalReview.id}`, updatedData);
+      
+      // Aktualizuj lokalną listę
+      setReviews(reviews.map(r => r.id === originalReview.id ? res.data : r));
+      handleEditCancel();
+    } catch (err) {
+      Alert.alert('Błąd', 'Nie udało się zapisać zmian.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDelete = (review) => {
+    Alert.alert(
+      'Potwierdzenie',
+      'Czy na pewno chcesz usunąć swoją recenzję?',
+      [
+        { text: 'Anuluj', style: 'cancel' },
+        { 
+          text: 'Usuń', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/Review/${review.id}`, {
+                params: {
+                  movieId: review.movieId
+                }
+              });
+              // Usuń lokalnie
+              setReviews(reviews.filter(r => r.id !== review.id));
+            } catch (err) {
+              Alert.alert('Błąd', 'Nie udało się usunąć recenzji.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
   };
 
-  const renderStars = (rating, interactive = false) => {
+  const renderStars = (rating, interactive = false, onRatingChange = null) => {
     return (
       <View style={styles.starsContainer}>
         {[1, 2, 3, 4, 5].map((star) => (
           <TouchableOpacity 
             key={star} 
             disabled={!interactive}
-            onPress={() => interactive && setNewRating(star)}
+            onPress={() => {
+              if (interactive) {
+                if (onRatingChange) {
+                  onRatingChange(star);
+                } else {
+                  setNewRating(star);
+                }
+              }
+            }}
             activeOpacity={0.7}
           >
             <Text style={[styles.star, star <= rating && styles.starFilled, interactive && styles.starInteractive]}>
@@ -98,23 +175,80 @@ export default function MovieReviews({ movieId }) {
           ) : (
             reviews.map((review) => (
               <View key={review.id} style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8 }}>
-                    <Text style={[styles.reviewAuthor, { flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{review.userId}</Text>
-                    {review.sentiment && review.sentiment !== 'Unknown' && (
-                      <View style={[styles.sentimentBadge, styles[`sentiment${review.sentiment}`]]}>
-                        <Text style={[styles.sentimentText, styles[`sentimentText${review.sentiment}`]]}>
-                          {review.sentiment === 'Positive' ? '😃 Pozytywna' : 
-                           review.sentiment === 'Negative' ? '😠 Negatywna' : 
-                           review.sentiment === 'Neutral' ? '😐 Neutralna' : '🤔 Mieszana'}
-                        </Text>
+                {editingReviewId === review.id ? (
+                  /* TRYB EDYCJI INLINE */
+                  <View style={styles.inlineEditContainer}>
+                    <View style={styles.reviewHeader}>
+                      <Text style={styles.reviewAuthor}>{review.userId} <Text style={styles.editingText}>(Edycja)</Text></Text>
+                      <Text style={styles.reviewDate}>Teraz</Text>
+                    </View>
+                    <View style={styles.formRow}>
+                      <Text style={styles.formLabel}>Ocena:</Text>
+                      {renderStars(editingRating, true, setEditingRating)}
+                    </View>
+                    <TextInput
+                      style={styles.inlineInput}
+                      placeholder="Edytuj recenzję..."
+                      placeholderTextColor={theme.colors.textMuted}
+                      multiline
+                      value={editingComment}
+                      onChangeText={setEditingComment}
+                    />
+                    <View style={styles.inlineActionsContainer}>
+                      <TouchableOpacity 
+                        style={[styles.inlineActionBtn, (!editingComment.trim() || savingEdit) && styles.submitBtnDisabled]}
+                        onPress={() => handleEditSave(review)}
+                        disabled={!editingComment.trim() || savingEdit}
+                      >
+                        {savingEdit ? (
+                          <ActivityIndicator color="#0a0a1a" size="small" />
+                        ) : (
+                          <Text style={styles.inlineActionBtnText}>Zapisz</Text>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.inlineActionCancelBtn]}
+                        onPress={handleEditCancel}
+                        disabled={savingEdit}
+                      >
+                        <Text style={styles.inlineActionCancelBtnText}>Anuluj</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  /* TRYB WYŚWIETLANIA */
+                  <View>
+                    <View style={styles.reviewHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8 }}>
+                        <Text style={[styles.reviewAuthor, { flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{review.userId}</Text>
+                        {review.sentiment && review.sentiment !== 'Unknown' && (
+                          <View style={[styles.sentimentBadge, styles[`sentiment${review.sentiment}`]]}>
+                            <Text style={[styles.sentimentText, styles[`sentimentText${review.sentiment}`]]}>
+                              {review.sentiment === 'Positive' ? '😃 Pozytywna' : 
+                               review.sentiment === 'Negative' ? '😠 Negatywna' : 
+                               review.sentiment === 'Neutral' ? '😐 Neutralna' : '🤔 Mieszana'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.reviewDate}>{formatDate(review.createdAt)}</Text>
+                    </View>
+                    {renderStars(review.rating)}
+                    <Text style={styles.reviewComment}>{review.comment}</Text>
+                    
+                    {/* Przyciski akcji dla właściciela opinii */}
+                    {auth.isLoggedIn && review.userId === auth.user?.userName && (
+                      <View style={styles.reviewActions}>
+                        <TouchableOpacity style={styles.actionBtn} onPress={() => handleEditStart(review)}>
+                          <Text style={styles.editBtnText}>✏️ Edytuj</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(review)}>
+                          <Text style={styles.deleteBtnText}>🗑️ Usuń</Text>
+                        </TouchableOpacity>
                       </View>
                     )}
                   </View>
-                  <Text style={styles.reviewDate}>{formatDate(review.createdAt)}</Text>
-                </View>
-                {renderStars(review.rating)}
-                <Text style={styles.reviewComment}>{review.comment}</Text>
+                )}
               </View>
             ))
           )}
@@ -122,33 +256,40 @@ export default function MovieReviews({ movieId }) {
       )}
 
       {auth.isLoggedIn ? (
-        <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Dodaj swoją recenzję</Text>
-          <View style={styles.formRow}>
-            <Text style={styles.formLabel}>Ocena:</Text>
-            {renderStars(newRating, true)}
+        hasExistingReview ? (
+          <View style={styles.alreadyReviewedBox}>
+            <Text style={styles.alreadyReviewedTitle}>📝 Dodałeś już opinię do tego filmu</Text>
+            <Text style={styles.alreadyReviewedText}>Możesz ją edytować lub usunąć za pomocą przycisków "Edytuj" / "Usuń" na swojej opinii powyżej.</Text>
           </View>
-          <TextInput
-            style={styles.input}
-            placeholder="Co sądzisz o tym filmie?"
-            placeholderTextColor={theme.colors.textMuted}
-            multiline
-            numberOfLines={3}
-            value={newComment}
-            onChangeText={setNewComment}
-          />
-          <TouchableOpacity 
-            style={[styles.submitBtn, (!newComment.trim() || submitting) && styles.submitBtnDisabled]}
-            onPress={handleSubmit}
-            disabled={!newComment.trim() || submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#0a0a1a" size="small" />
-            ) : (
-              <Text style={styles.submitBtnText}>Dodaj recenzję</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        ) : (
+          <View style={styles.formContainer}>
+            <Text style={styles.formTitle}>Dodaj swoją recenzję</Text>
+            <View style={styles.formRow}>
+              <Text style={styles.formLabel}>Ocena:</Text>
+              {renderStars(newRating, true, setNewRating)}
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Co sądzisz o tym filmie?"
+              placeholderTextColor={theme.colors.textMuted}
+              multiline
+              numberOfLines={3}
+              value={newComment}
+              onChangeText={setNewComment}
+            />
+            <TouchableOpacity 
+              style={[styles.submitBtn, (!newComment.trim() || submitting) && styles.submitBtnDisabled]}
+              onPress={handleSubmit}
+              disabled={!newComment.trim() || submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#0a0a1a" size="small" />
+              ) : (
+                <Text style={styles.submitBtnText}>Dodaj recenzję</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )
       ) : (
         <View style={styles.loginPrompt}>
           <Text style={styles.loginPromptText}>Zaloguj się, aby dodać recenzję.</Text>
@@ -308,5 +449,99 @@ const styles = StyleSheet.create({
   },
   loginPromptText: {
     color: theme.colors.textSecondary,
+  },
+  reviewActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderStyle: 'dashed',
+  },
+  actionBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 4,
+  },
+  editBtnText: {
+    color: theme.colors.accentGold,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  deleteBtnText: {
+    color: '#f87171',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  inlineEditContainer: {
+    width: '100%',
+  },
+  editingText: {
+    fontSize: 12,
+    color: theme.colors.accentGold,
+    fontWeight: 'normal',
+  },
+  inlineInput: {
+    backgroundColor: theme.colors.bgPrimary,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    color: theme.colors.textPrimary,
+    padding: 10,
+    minHeight: 60,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+  },
+  inlineActionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  inlineActionBtn: {
+    backgroundColor: theme.colors.accentGold,
+    borderRadius: theme.radius.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineActionBtnText: {
+    color: '#0a0a1a',
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  inlineActionCancelBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineActionCancelBtnText: {
+    color: theme.colors.textSecondary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  alreadyReviewedBox: {
+    backgroundColor: 'rgba(251, 191, 36, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.2)',
+    borderRadius: theme.radius.md,
+    padding: 16,
+  },
+  alreadyReviewedTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.accentGoldLight,
+    marginBottom: 6,
+  },
+  alreadyReviewedText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    lineHeight: 18,
   }
 });
