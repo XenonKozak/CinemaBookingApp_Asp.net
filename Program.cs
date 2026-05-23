@@ -67,10 +67,11 @@ namespace CinemaBookingApp2
             var databaseName = builder.Configuration["CosmosDb:DatabaseName"];
             var containerName = builder.Configuration["CosmosDb:ContainerName"];
 
-            // Tworzymy Singleton instancji CosmosClient zgodnie z najlepszymi praktykami
             builder.Services.AddSingleton<Microsoft.Azure.Cosmos.CosmosClient>(s => 
             {
-                if (cosmosEndpoint.Contains("TWOJA-BAZA")) 
+                if (string.IsNullOrEmpty(cosmosEndpoint) || 
+                    cosmosEndpoint.Contains("TWOJA-BAZA") || 
+                    cosmosEndpoint.Contains("YOUR_COSMOS_DB_ENDPOINT")) 
                 {
                     // To tylko ochrona przed wyrzucaniem bledu na starcie, gdy uzytkownik jeszcze nie podal kluczy
                     return null;

@@ -39,6 +39,15 @@
               <span class="status-dot"></span>
               <span>Potwierdzona</span>
             </div>
+            <router-link 
+              v-if="res.movieId"
+              :to="'/movie/' + res.movieId + '/reviews'" 
+              class="btn-review"
+              title="Oceń ten film"
+            >
+              <Star size="14" />
+              Oceń film
+            </router-link>
             <button 
               class="btn-cancel" 
               @click="cancelReservation(res.id)"
@@ -65,7 +74,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Calendar, Trash2 } from 'lucide-vue-next';
+import { Calendar, Trash2, Star } from 'lucide-vue-next';
 import api from '../api/axios.js';
 
 const reservations = ref([]);

@@ -37,7 +37,7 @@
       </div>
 
       <!-- Formularz dodawania nowej opinii -->
-      <div v-if="authStore.isLoggedIn" class="add-review-section glass-card">
+      <div v-if="auth.isLoggedIn" class="add-review-section glass-card">
         <h3>Dodaj swoją recenzję</h3>
         <form @submit.prevent="submitReview" class="review-form">
           <div class="rating-selector">
@@ -80,6 +80,8 @@
 import { ref, computed, onMounted } from 'vue';
 import api from '../api/axios.js';
 import { authStore } from '../stores/auth.js';
+
+const auth = authStore;
 
 const props = defineProps({
   movieId: {
@@ -140,7 +142,7 @@ const submitReview = async () => {
   try {
     const reviewData = {
       movieId: props.movieId,
-      userId: authStore.user?.userName || 'Anonim',
+      userId: auth.user?.userName || 'Anonim',
       rating: newReview.value.rating,
       comment: newReview.value.comment.trim()
     };
