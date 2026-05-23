@@ -1,4 +1,4 @@
-﻿using CinemaBookingApp2.DTOs.AuthDTOs;
+using CinemaBookingApp2.DTOs.AuthDTOs;
 
 namespace CinemaBookingApp2.Interfaces
 {
@@ -7,6 +7,6 @@ namespace CinemaBookingApp2.Interfaces
         Task Register(RegisterUserDto request);
         Task<IEnumerable<GetUsersDto>> GetAllUsers();
         Task<GetUsersDto> GetUserById(Guid id);
-        public string Login(LoginUserDto request);
+        Task<string> Login(LoginUserDto request);
     }
 }

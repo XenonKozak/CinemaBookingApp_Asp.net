@@ -20,14 +20,16 @@ namespace CinemaBookingApp2.Services
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly IServiceBusService _serviceBusService;
+        private readonly ITableStorageService _tableStorageService;
 
-        public AuthService(ReservationContext context, IPasswordHasher<User> hasher, IConfiguration configuration, IMapper mapper, IServiceBusService serviceBusService)
+        public AuthService(ReservationContext context, IPasswordHasher<User> hasher, IConfiguration configuration, IMapper mapper, IServiceBusService serviceBusService, ITableStorageService tableStorageService)
         {
             _context = context;
             _passwordHasher = hasher;
             _configuration = configuration;
             _mapper = mapper;
             _serviceBusService = serviceBusService;
+            _tableStorageService = tableStorageService;
         }
 
         public async Task Register(RegisterUserDto request)
@@ -46,18 +48,31 @@ namespace CinemaBookingApp2.Services
                 Role = user.Role
             };
             await _serviceBusService.SendMessageAsync(message, "user-events");
+
+            // Log activity to Azure Table Storage
+            var log = new ActivityLogEntity("UserRegister", user.Id.ToString(), user.UserName, "User registered successfully");
+            await _tableStorageService.LogActivityAsync(log);
         }
 
-        public string Login(LoginUserDto request)
+        public async Task<string> Login(LoginUserDto request)
         {
             var user = _context.Users.FirstOrDefault(u => u.Email == request.Email || u.UserName == request.UserName);
             if (user is null || _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
             {
+                if (user != null)
+                {
+                    // Log failed login
+                    var failedLog = new ActivityLogEntity("UserLoginFailed", user.Id.ToString(), user.UserName, "Invalid password attempt");
+                    await _tableStorageService.LogActivityAsync(failedLog);
+                }
                 return null;
             }
 
-            return GenerateToken(user);
+            // Log successful login
+            var successLog = new ActivityLogEntity("UserLoginSuccess", user.Id.ToString(), user.UserName, "User logged in successfully");
+            await _tableStorageService.LogActivityAsync(successLog);
 
+            return GenerateToken(user);
         }
 
         public async Task<IEnumerable<GetUsersDto>> GetAllUsers()

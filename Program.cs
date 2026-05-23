@@ -60,6 +60,9 @@ namespace CinemaBookingApp2
 
             builder.Services.AddSingleton(x => new BlobServiceClient(builder.Configuration.GetConnectionString("BlobStorage")));
             builder.Services.AddScoped<IBlobService, BlobService>();
+            
+            // Rejestracja Azure Table Storage
+            builder.Services.AddSingleton<ITableStorageService, TableStorageService>();
 
             // Rejestracja Cosmos DB
             var cosmosEndpoint = builder.Configuration["CosmosDb:Endpoint"];

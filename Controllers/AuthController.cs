@@ -34,9 +34,9 @@ namespace CinemaBookingApp2.Controllers
         }
 
         [HttpPost("Login")]
-        public ActionResult<string>Login(LoginUserDto request)
+        public async Task<ActionResult<string>> Login(LoginUserDto request)
         {
-           var token  = _authService.Login(request);
+           var token  = await _authService.Login(request);
            if (token == null) return BadRequest();
             
             return Ok(token);
