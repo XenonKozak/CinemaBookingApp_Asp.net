@@ -61,7 +61,10 @@ namespace CinemaBookingApp2
             builder.Services.AddSingleton(x => 
             {
                 var connString = builder.Configuration.GetConnectionString("BlobStorage");
-                if (string.IsNullOrEmpty(connString) || connString.Contains("TWOJ_BLOB"))
+                if (string.IsNullOrEmpty(connString) || 
+                    connString.Contains("TWOJ_BLOB") || 
+                    connString.Contains("YOUR_KEY") || 
+                    connString.Contains("YOUR_STORAGE_ACCOUNT"))
                 {
                     return null;
                 }
